@@ -4,20 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Neon Aura AR - Hand Tracking</title>
+<title>Neon Aura AR - Advanced Hand Tracking</title>
 
-<!-- MediaPipe -->
+<!-- =====================================================
+     MEDIAPIPE
+===================================================== -->
+
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 
+
 <style>
 
+/* =====================================================
+   GLOBAL
+===================================================== */
+
 :root {
-    --accent: #00ffcc;
-    --bg: #050510;
-    --glass: rgba(10,15,30,0.55);
+    --accent: #00ffff;
+    --accent2: #ff00ff;
+    --bg: #02030b;
+    --panel: rgba(5, 10, 25, 0.72);
     --border: rgba(255,255,255,0.18);
 }
 
@@ -33,14 +42,23 @@ body {
     height: 100%;
     overflow: hidden;
     background: #000;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family:
+        Inter,
+        Arial,
+        Helvetica,
+        sans-serif;
 }
 
-/* =========================================================
+
+/* =====================================================
    CAMERA
-========================================================= */
+
+   IMPORTANT:
+   Camera is the FIRST visual layer.
+===================================================== */
 
 #video {
+
     position: fixed;
 
     top: 0;
@@ -53,25 +71,28 @@ body {
 
     display: block;
 
+    visibility: visible;
+
+    opacity: 1;
+
     background: #000;
 
-    /*
-       IMPORTANT:
-       Camera must remain BELOW the canvases.
-    */
     z-index: 1;
 
     transform: scaleX(-1);
 
     filter:
-        brightness(0.78)
+        brightness(0.92)
         contrast(1.05)
         saturate(1.05);
 }
 
-/* =========================================================
-   BACKGROUND EFFECT
-========================================================= */
+
+/* =====================================================
+   BACKGROUND CANVAS
+
+   Completely transparent.
+===================================================== */
 
 #backgroundCanvas {
 
@@ -88,11 +109,14 @@ body {
     pointer-events: none;
 
     transform: scaleX(-1);
+
+    background: transparent;
 }
 
-/* =========================================================
-   MAIN EFFECT CANVAS
-========================================================= */
+
+/* =====================================================
+   EFFECT CANVAS
+===================================================== */
 
 #effectCanvas {
 
@@ -109,11 +133,14 @@ body {
     pointer-events: none;
 
     transform: scaleX(-1);
+
+    background: transparent;
 }
 
-/* =========================================================
+
+/* =====================================================
    HUD
-========================================================= */
+===================================================== */
 
 #hud {
 
@@ -124,35 +151,33 @@ body {
 
     z-index: 20;
 
-    display: flex;
+    width: 255px;
 
-    flex-direction: column;
-
-    gap: 12px;
-
-    transition: 0.4s;
+    transition: 0.3s;
 }
 
 .panel {
 
-    min-width: 220px;
-
-    padding: 16px 20px;
-
-    border-radius: 16px;
-
-    background: var(--glass);
+    background:
+        linear-gradient(
+            135deg,
+            rgba(8,15,35,0.82),
+            rgba(2,5,15,0.72)
+        );
 
     border: 1px solid var(--border);
 
-    backdrop-filter: blur(15px);
+    border-radius: 17px;
 
-    -webkit-backdrop-filter: blur(15px);
+    padding: 16px 18px;
+
+    backdrop-filter: blur(18px);
+
+    -webkit-backdrop-filter: blur(18px);
 
     box-shadow:
-        0 10px 40px rgba(0,0,0,0.5),
-        0 0 20px rgba(0,255,204,0.05);
-
+        0 15px 50px rgba(0,0,0,0.5),
+        inset 0 0 20px rgba(255,255,255,0.02);
 }
 
 .stat {
@@ -161,11 +186,12 @@ body {
 
     justify-content: space-between;
 
-    gap: 30px;
+    align-items: center;
 
     margin-bottom: 8px;
 
-    color: rgba(255,255,255,0.85);
+    color:
+        rgba(255,255,255,0.88);
 
     font-size: 14px;
 }
@@ -178,86 +204,283 @@ body {
 
     color: var(--accent);
 
-    font-weight: bold;
+    font-weight: 700;
 
     text-shadow:
         0 0 8px var(--accent);
 }
 
-/* =========================================================
-   THEME BAR
-========================================================= */
 
-#themes {
+/* =====================================================
+   ENERGY
+===================================================== */
 
-    position: fixed;
+.energy-title {
 
-    bottom: 25px;
-    left: 50%;
+    margin-top: 12px;
 
-    transform: translateX(-50%);
+    margin-bottom: 6px;
 
-    z-index: 20;
-
-    display: flex;
-
-    gap: 7px;
-
-    padding: 8px;
-
-    border-radius: 40px;
-
-    background: rgba(5,10,20,0.65);
-
-    border: 1px solid var(--border);
-
-    backdrop-filter: blur(15px);
-
-    -webkit-backdrop-filter: blur(15px);
-
-    white-space: nowrap;
-}
-
-.theme-btn {
-
-    border: 1px solid transparent;
-
-    background: transparent;
+    font-size: 13px;
 
     color: white;
 
-    padding: 9px 15px;
+    letter-spacing: 0.5px;
+}
+
+.energy-bar {
+
+    width: 100%;
+
+    height: 8px;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    background:
+        rgba(255,255,255,0.12);
+}
+
+.energy-fill {
+
+    height: 100%;
+
+    width: 20%;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #00ffff,
+            #00ff88,
+            #ff00cc,
+            #6644ff
+        );
+
+    box-shadow:
+        0 0 12px var(--accent);
+
+    transition:
+        width 0.2s ease;
+}
+
+
+/* =====================================================
+   TOP RIGHT CONTROLS
+===================================================== */
+
+#controls {
+
+    position: fixed;
+
+    top: 20px;
+    right: 20px;
+
+    z-index: 25;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+.control-btn {
+
+    border: 1px solid var(--border);
+
+    background:
+        rgba(5,10,25,0.68);
+
+    color: white;
+
+    padding:
+        11px 17px;
 
     border-radius: 25px;
 
     cursor: pointer;
 
-    transition: 0.3s;
+    backdrop-filter: blur(15px);
+
+    -webkit-backdrop-filter: blur(15px);
 
     font-size: 13px;
 
+    transition:
+        0.25s ease;
+
+    white-space: nowrap;
+}
+
+.control-btn:hover {
+
+    background:
+        rgba(255,255,255,0.15);
+
+    transform:
+        translateX(-3px);
+
+    box-shadow:
+        0 0 15px
+        rgba(0,255,255,0.2);
+}
+
+.control-btn.active {
+
+    border-color:
+        rgba(0,255,255,0.4);
+
+    box-shadow:
+        0 0 15px
+        rgba(0,255,255,0.15);
+}
+
+
+/* =====================================================
+   THEME BAR
+===================================================== */
+
+#themes {
+
+    position: fixed;
+
+    left: 50%;
+
+    bottom: 22px;
+
+    transform:
+        translateX(-50%);
+
+    z-index: 25;
+
+    display: flex;
+
+    gap: 5px;
+
+    max-width: 92vw;
+
+    padding: 7px;
+
+    border-radius: 35px;
+
+    background:
+        rgba(3,8,20,0.72);
+
+    border:
+        1px solid var(--border);
+
+    backdrop-filter:
+        blur(18px);
+
+    -webkit-backdrop-filter:
+        blur(18px);
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+}
+
+#themes::-webkit-scrollbar {
+    display: none;
+}
+
+.theme-btn {
+
+    border:
+        1px solid transparent;
+
+    background:
+        transparent;
+
+    color: white;
+
+    padding:
+        9px 14px;
+
+    border-radius: 25px;
+
+    cursor: pointer;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    transition:
+        0.25s ease;
 }
 
 .theme-btn:hover {
 
-    background: rgba(255,255,255,0.12);
-
+    background:
+        rgba(255,255,255,0.10);
 }
 
 .theme-btn.active {
 
-    background: rgba(255,255,255,0.18);
+    background:
+        rgba(255,255,255,0.17);
 
-    border-color: rgba(255,255,255,0.3);
+    border-color:
+        rgba(255,255,255,0.3);
 
     box-shadow:
-        0 0 15px rgba(255,255,255,0.12);
-
+        0 0 15px
+        rgba(255,255,255,0.08);
 }
 
-/* =========================================================
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+#status {
+
+    position: fixed;
+
+    left: 50%;
+
+    bottom: 82px;
+
+    transform:
+        translateX(-50%);
+
+    z-index: 20;
+
+    color:
+        rgba(255,255,255,0.9);
+
+    background:
+        rgba(0,0,0,0.48);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.1);
+
+    padding:
+        8px 16px;
+
+    border-radius: 20px;
+
+    font-size: 12px;
+
+    backdrop-filter:
+        blur(10px);
+
+    -webkit-backdrop-filter:
+        blur(10px);
+
+    white-space: nowrap;
+}
+
+
+/* =====================================================
    START SCREEN
-========================================================= */
+===================================================== */
 
 #startOverlay {
 
@@ -271,22 +494,27 @@ body {
 
     flex-direction: column;
 
-    justify-content: center;
-
     align-items: center;
+
+    justify-content: center;
 
     text-align: center;
 
     background:
         radial-gradient(
             circle at center,
-            rgba(30,0,80,0.4),
-            rgba(0,0,0,0.97)
+            rgba(30,0,80,0.42),
+            rgba(0,0,0,0.96)
         );
 
-    backdrop-filter: blur(12px);
+    backdrop-filter:
+        blur(12px);
 
-    transition: opacity 0.6s;
+    -webkit-backdrop-filter:
+        blur(12px);
+
+    transition:
+        opacity 0.6s ease;
 }
 
 #startOverlay.hidden {
@@ -296,133 +524,226 @@ body {
     pointer-events: none;
 }
 
-.title {
+.start-title {
 
-    font-size: clamp(30px, 6vw, 70px);
+    font-size:
+        clamp(
+            32px,
+            6vw,
+            72px
+        );
 
-    letter-spacing: 8px;
+    font-weight:
+        300;
 
-    font-weight: 300;
+    letter-spacing:
+        8px;
 
-    margin-bottom: 20px;
+    color:
+        white;
+
+    margin-bottom:
+        20px;
 
     text-shadow:
-        0 0 10px #00ffff,
-        0 0 30px #ff00ff;
+        0 0 12px #00ffff,
+        0 0 30px #ff00ff,
+        0 0 60px #6600ff;
 }
 
-.subtitle {
+.start-subtitle {
 
-    color: #aaa;
+    max-width:
+        550px;
 
-    max-width: 500px;
+    padding:
+        0 20px;
 
-    line-height: 1.6;
+    color:
+        #999;
 
-    margin-bottom: 35px;
+    line-height:
+        1.7;
 
-    padding: 0 20px;
+    margin-bottom:
+        35px;
 }
 
 #startBtn {
 
-    border: none;
+    padding:
+        16px 40px;
 
-    padding: 16px 38px;
+    border:
+        none;
 
-    border-radius: 40px;
+    border-radius:
+        35px;
 
-    color: white;
+    color:
+        white;
 
     background:
         linear-gradient(
             45deg,
             #ff00cc,
-            #3333ff
+            #6633ff
         );
 
-    font-weight: bold;
+    font-size:
+        15px;
 
-    font-size: 16px;
+    font-weight:
+        bold;
 
-    letter-spacing: 2px;
+    letter-spacing:
+        2px;
 
-    cursor: pointer;
+    cursor:
+        pointer;
 
     box-shadow:
-        0 0 20px rgba(255,0,204,0.5);
+        0 0 25px
+        rgba(255,0,204,0.55);
 
-    transition: 0.3s;
+    transition:
+        0.3s ease;
 }
 
 #startBtn:hover {
 
-    transform: scale(1.06);
+    transform:
+        scale(1.06);
 
     box-shadow:
-        0 0 35px rgba(255,0,204,0.8);
+        0 0 40px
+        rgba(255,0,204,0.8);
 }
 
-/* =========================================================
-   STATUS
-========================================================= */
+#startBtn:disabled {
 
-#status {
+    opacity:
+        0.7;
+
+    cursor:
+        wait;
+}
+
+
+/* =====================================================
+   ERROR MESSAGE
+===================================================== */
+
+#errorBox {
+
+    display: none;
 
     position: fixed;
 
-    bottom: 85px;
-
     left: 50%;
 
-    transform: translateX(-50%);
+    top: 50%;
 
-    z-index: 20;
+    transform:
+        translate(-50%,-50%);
 
-    padding: 8px 16px;
+    z-index: 200;
 
-    border-radius: 20px;
+    width:
+        min(90vw,450px);
 
-    background: rgba(0,0,0,0.45);
+    padding:
+        25px;
 
-    color: rgba(255,255,255,0.7);
+    background:
+        rgba(20,0,10,0.95);
 
-    font-size: 12px;
+    border:
+        1px solid #ff3366;
 
-    backdrop-filter: blur(10px);
+    border-radius:
+        15px;
+
+    color:
+        white;
+
+    text-align:
+        center;
+
+    box-shadow:
+        0 0 40px
+        rgba(255,0,80,0.3);
 }
 
-/* =========================================================
-   MOBILE
-========================================================= */
 
-@media(max-width:600px) {
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media(max-width:700px) {
 
     #hud {
+
         top: 10px;
+
         left: 10px;
+
+        width: 205px;
     }
 
     .panel {
-        min-width: 175px;
-        padding: 11px 14px;
+
+        padding:
+            12px 14px;
     }
 
     .stat {
-        font-size: 12px;
+
+        font-size:
+            12px;
+    }
+
+    #controls {
+
+        top: 10px;
+
+        right: 10px;
+    }
+
+    .control-btn {
+
+        padding:
+            9px 12px;
+
+        font-size:
+            11px;
     }
 
     #themes {
-        bottom: 15px;
 
-        max-width: 95vw;
+        bottom:
+            12px;
 
-        overflow-x: auto;
+        max-width:
+            96vw;
     }
 
     .theme-btn {
-        padding: 8px 11px;
-        font-size: 11px;
+
+        padding:
+            8px 10px;
+
+        font-size:
+            11px;
+    }
+
+    #status {
+
+        bottom:
+            65px;
+
+        font-size:
+            11px;
     }
 
 }
@@ -430,7 +751,9 @@ body {
 </style>
 </head>
 
+
 <body>
+
 
 <!-- =====================================================
      CAMERA
@@ -443,8 +766,9 @@ body {
     playsinline>
 </video>
 
+
 <!-- =====================================================
-     CANVASES
+     CANVAS LAYERS
 ===================================================== -->
 
 <canvas id="backgroundCanvas"></canvas>
@@ -461,7 +785,7 @@ body {
     <div class="panel">
 
         <div class="stat">
-            <span>Hands Detected</span>
+            <span>Hands</span>
             <span
                 class="value"
                 id="handsCount">
@@ -477,11 +801,6 @@ body {
                 0
             </span>
         </div>
-
-    </div>
-
-
-    <div class="panel">
 
         <div class="stat">
             <span>Gesture</span>
@@ -501,13 +820,66 @@ body {
             </span>
         </div>
 
+        <div class="energy-title">
+            ENERGY POWER
+            <span
+                id="energyText">
+                20%
+            </span>
+        </div>
+
+        <div class="energy-bar">
+
+            <div
+                class="energy-fill"
+                id="energyFill">
+            </div>
+
+        </div>
+
     </div>
 
 </div>
 
 
 <!-- =====================================================
-     THEME BUTTONS
+     CONTROLS
+===================================================== -->
+
+<div id="controls">
+
+    <button
+        class="control-btn"
+        id="captureBtn">
+        📷 Capture
+    </button>
+
+    <button
+        class="control-btn active"
+        id="trailBtn">
+        ✨ Trails: ON
+    </button>
+
+    <button
+        class="control-btn active"
+        id="portalBtn">
+        🌀 Portal: ON
+    </button>
+
+</div>
+
+
+<!-- =====================================================
+     STATUS
+===================================================== -->
+
+<div id="status">
+    Waiting for camera...
+</div>
+
+
+<!-- =====================================================
+     THEMES
 ===================================================== -->
 
 <div id="themes">
@@ -521,7 +893,7 @@ body {
     <button
         class="theme-btn"
         data-theme="Cyberpunk">
-        💜 Cyberpunk
+        💗 Cyberpunk
     </button>
 
     <button
@@ -542,27 +914,52 @@ body {
         🌌 Galaxy
     </button>
 
-</div>
+    <button
+        class="theme-btn"
+        data-theme="Aurora">
+        🌈 Aurora
+    </button>
 
+    <button
+        class="theme-btn"
+        data-theme="Ice">
+        ❄️ Ice
+    </button>
 
-<div id="status">
-    Waiting for camera...
+    <button
+        class="theme-btn"
+        data-theme="Inferno">
+        🔥 Inferno
+    </button>
+
+    <button
+        class="theme-btn"
+        data-theme="Mystic">
+        🔮 Mystic
+    </button>
+
+    <button
+        class="theme-btn"
+        data-theme="Toxic">
+        ☢️ Toxic
+    </button>
+
 </div>
 
 
 <!-- =====================================================
-     START SCREEN
+     START OVERLAY
 ===================================================== -->
 
 <div id="startOverlay">
 
-    <div class="title">
-        NEON AURA
+    <div class="start-title">
+        NEON AURA AR
     </div>
 
-    <div class="subtitle">
+    <div class="start-subtitle">
 
-        Advanced Hand Tracking AR Experience
+        Advanced Hand Tracking Experience
 
         <br><br>
 
@@ -578,53 +975,121 @@ body {
 </div>
 
 
+<!-- =====================================================
+     ERROR
+===================================================== -->
+
+<div id="errorBox">
+
+    <h2>
+        Camera Error
+    </h2>
+
+    <br>
+
+    <p id="errorText">
+        Unable to access camera.
+    </p>
+
+</div>
+
+
 <script>
 
-/* =========================================================
+/* =====================================================
    ELEMENTS
-========================================================= */
+===================================================== */
 
 const video =
-    document.getElementById("video");
+    document.getElementById(
+        "video"
+    );
 
 const bgCanvas =
-    document.getElementById("backgroundCanvas");
+    document.getElementById(
+        "backgroundCanvas"
+    );
 
 const effectCanvas =
-    document.getElementById("effectCanvas");
+    document.getElementById(
+        "effectCanvas"
+    );
 
 const bg =
-    bgCanvas.getContext("2d");
+    bgCanvas.getContext(
+        "2d"
+    );
 
 const ctx =
-    effectCanvas.getContext("2d");
+    effectCanvas.getContext(
+        "2d"
+    );
 
 
 const handsCount =
-    document.getElementById("handsCount");
+    document.getElementById(
+        "handsCount"
+    );
 
 const fpsDisplay =
-    document.getElementById("fps");
+    document.getElementById(
+        "fps"
+    );
 
 const gestureDisplay =
-    document.getElementById("gesture");
+    document.getElementById(
+        "gesture"
+    );
 
 const spreadDisplay =
-    document.getElementById("spread");
+    document.getElementById(
+        "spread"
+    );
+
+const energyFill =
+    document.getElementById(
+        "energyFill"
+    );
+
+const energyText =
+    document.getElementById(
+        "energyText"
+    );
 
 const statusDisplay =
-    document.getElementById("status");
+    document.getElementById(
+        "status"
+    );
 
 const startOverlay =
-    document.getElementById("startOverlay");
+    document.getElementById(
+        "startOverlay"
+    );
 
 const startBtn =
-    document.getElementById("startBtn");
+    document.getElementById(
+        "startBtn"
+    );
+
+const captureBtn =
+    document.getElementById(
+        "captureBtn"
+    );
+
+const trailBtn =
+    document.getElementById(
+        "trailBtn"
+    );
+
+const portalBtn =
+    document.getElementById(
+        "portalBtn"
+    );
 
 
-/* =========================================================
+/* =====================================================
    VARIABLES
-========================================================= */
+===================================================== */
 
 let width =
     window.innerWidth;
@@ -638,78 +1103,167 @@ let particles = [];
 
 let ripples = [];
 
-let lastTime =
-    performance.now();
+let trailPoints = [];
+
+let portalParticles = [];
+
+let previousHands = [];
+
+let previousPinch =
+    [false,false];
 
 let time = 0;
 
-let frames = 0;
+let lastTime =
+    performance.now();
 
 let fpsTime =
     performance.now();
 
-let cameraStream = null;
+let frames = 0;
 
-let mediaPipeHands = null;
+let energy = 20;
 
-let camera = null;
+let trailsEnabled =
+    true;
+
+let portalEnabled =
+    true;
+
+let cameraStream =
+    null;
+
+let mediaPipeHands =
+    null;
+
+let camera =
+    null;
 
 
-/* =========================================================
+/* =====================================================
+   FINGER TIPS
+===================================================== */
+
+const FINGER_TIPS =
+    [4,8,12,16,20];
+
+
+/* =====================================================
    THEMES
-========================================================= */
+===================================================== */
 
-let currentTheme = "Rainbow";
+let currentTheme =
+    "Rainbow";
+
 
 const themes = {
 
-    Rainbow: function(t,index,total) {
+    Rainbow: function(t,i,total) {
 
         return `
             hsl(
-                ${(t * 100 + index * (360 / total)) % 360},
+                ${(t * 100 +
+                i * (360 / total)) % 360},
                 100%,
                 60%
             )
         `;
     },
 
-    Cyberpunk: function(t,index,total) {
+    Cyberpunk: function(t,i,total) {
 
-        return index % 2 === 0
-            ? "#ff0088"
+        return i % 2 === 0
+            ? "#ff00aa"
             : "#00ffff";
     },
 
-    Lava: function(t,index,total) {
+    Lava: function(t,i,total) {
 
         return `
             hsl(
-                ${10 + index * 8},
+                ${5 + i * 10},
                 100%,
                 ${55 + Math.sin(t) * 10}%
             )
         `;
     },
 
-    Ocean: function(t,index,total) {
+    Ocean: function(t,i,total) {
 
         return `
             hsl(
-                ${180 + index * 15},
+                ${180 + i * 14},
                 100%,
                 60%
             )
         `;
     },
 
-    Galaxy: function(t,index,total) {
+    Galaxy: function(t,i,total) {
 
         return `
             hsl(
-                ${260 + Math.sin(t * 2 + index) * 40},
+                ${250 +
+                Math.sin(t * 2 + i) * 45},
                 100%,
                 65%
+            )
+        `;
+    },
+
+    Aurora: function(t,i,total) {
+
+        return `
+            hsl(
+                ${120 +
+                Math.sin(t + i) * 80},
+                100%,
+                65%
+            )
+        `;
+    },
+
+    Ice: function(t,i,total) {
+
+        return `
+            hsl(
+                ${185 + i * 8},
+                100%,
+                ${65 + Math.sin(t) * 8}%
+            )
+        `;
+    },
+
+    Inferno: function(t,i,total) {
+
+        return `
+            hsl(
+                ${20 + i * 6},
+                100%,
+                60%
+            )
+        `;
+    },
+
+    Mystic: function(t,i,total) {
+
+        return `
+            hsl(
+                ${270 +
+                Math.sin(t + i) * 60},
+                100%,
+                65%
+            )
+        `;
+    },
+
+    Toxic: function(t,i,total) {
+
+        return `
+            hsl(
+                ${70 + i * 10},
+                100%,
+                58%
             )
         `;
     }
@@ -717,9 +1271,9 @@ const themes = {
 };
 
 
-/* =========================================================
+/* =====================================================
    RESIZE
-========================================================= */
+===================================================== */
 
 function resize() {
 
@@ -740,6 +1294,8 @@ function resize() {
 
     effectCanvas.height =
         height;
+
+    createPortalParticles();
 }
 
 window.addEventListener(
@@ -747,326 +1303,365 @@ window.addEventListener(
     resize
 );
 
-resize();
+
+/* =====================================================
+   MATRIX
+===================================================== */
+
+let matrixDrops = [];
 
 
-/* =========================================================
-   THEME SWITCHING
-========================================================= */
+function createMatrix() {
 
-document
-.querySelectorAll(".theme-btn")
-.forEach(button => {
+    const columns =
+        Math.floor(
+            width / 18
+        );
 
-    button.addEventListener(
-        "click",
-        () => {
+    matrixDrops =
+        new Array(columns)
+        .fill(0)
+        .map(
+            () =>
+                Math.random()
+                * height
+        );
+}
 
-            document
-            .querySelectorAll(".theme-btn")
-            .forEach(btn =>
-                btn.classList.remove("active")
-            );
 
-            button.classList.add("active");
+function drawBackground() {
 
-            currentTheme =
-                button.dataset.theme;
+    /*
+       IMPORTANT:
+       Clear instead of filling with black.
+       This keeps camera visible.
+    */
 
-            document.documentElement
-            .style
-            .setProperty(
-                "--accent",
-                themes[currentTheme](
-                    time,
-                    1,
-                    5
-                )
-            );
-        }
+    bg.clearRect(
+        0,
+        0,
+        width,
+        height
     );
 
-});
+
+    bg.font =
+        "16px monospace";
 
 
-/* =========================================================
-   START EXPERIENCE
-========================================================= */
+    for (
+        let i = 0;
+        i < matrixDrops.length;
+        i++
+    ) {
 
-startBtn.addEventListener(
-    "click",
-    startExperience
-);
+        if (
+            Math.random() > 0.94
+        ) {
 
-
-async function startExperience() {
-
-    startBtn.disabled = true;
-
-    startBtn.innerText =
-        "STARTING...";
-
-    statusDisplay.innerText =
-        "Requesting camera permission...";
-
-    try {
-
-        /* =========================================
-           CAMERA
-        ========================================= */
-
-        cameraStream =
-            await navigator
-            .mediaDevices
-            .getUserMedia({
-
-                video: {
-
-                    facingMode: "user",
-
-                    width: {
-                        ideal: 1280
-                    },
-
-                    height: {
-                        ideal: 720
-                    }
-
-                },
-
-                audio: false
-
-            });
+            const char =
+                String.fromCharCode(
+                    0x30A0 +
+                    Math.random() * 96
+                );
 
 
-        /* =========================================
-           CONNECT CAMERA TO VIDEO
-        ========================================= */
-
-        video.srcObject =
-            cameraStream;
-
-        video.muted =
-            true;
-
-        video.playsInline =
-            true;
-
-        video.style.display =
-            "block";
+            bg.fillStyle =
+                themes[currentTheme](
+                    time,
+                    i,
+                    matrixDrops.length
+                );
 
 
-        /* =========================================
-           WAIT FOR VIDEO
-        ========================================= */
-
-        await new Promise(
-            resolve => {
-
-                if (
-                    video.readyState >= 2
-                ) {
-
-                    resolve();
-
-                } else {
-
-                    video.onloadedmetadata =
-                        () => resolve();
-
-                }
-
-            }
-        );
+            bg.globalAlpha =
+                0.28;
 
 
-        await video.play();
-
-
-        console.log(
-            "Camera started:",
-            video.videoWidth,
-            "x",
-            video.videoHeight
-        );
-
-
-        statusDisplay.innerText =
-            "Camera active • Show your hand";
-
-
-        /* =========================================
-           START MEDIAPIPE
-        ========================================= */
-
-        initMediaPipe();
-
-
-        /* =========================================
-           HIDE START SCREEN
-        ========================================= */
-
-        setTimeout(() => {
-
-            startOverlay.classList.add(
-                "hidden"
+            bg.fillText(
+                char,
+                i * 18,
+                matrixDrops[i]
             );
 
-        }, 300);
+        }
 
 
-        /* =========================================
-           START RENDER LOOP
-        ========================================= */
+        matrixDrops[i] +=
+            1.2;
 
-        requestAnimationFrame(
-            renderLoop
-        );
 
-    }
+        if (
+            matrixDrops[i] >
+            height
+        ) {
 
-    catch(error) {
+            matrixDrops[i] =
+                0;
 
-        console.error(
-            "Camera error:",
-            error
-        );
-
-        statusDisplay.innerText =
-            "Camera permission denied or unavailable";
-
-        startBtn.disabled =
-            false;
-
-        startBtn.innerText =
-            "TRY AGAIN";
-
-        alert(
-            "Camera could not be started.\n\n" +
-            "Please allow camera permission and reload the page."
-        );
+        }
 
     }
+
+
+    bg.globalAlpha =
+        1;
 
 }
 
 
-/* =========================================================
-   MEDIAPIPE
-========================================================= */
+/* =====================================================
+   PORTAL PARTICLES
+===================================================== */
 
-function initMediaPipe() {
+function createPortalParticles() {
 
-    mediaPipeHands =
-        new Hands({
+    portalParticles =
+        [];
 
-            locateFile: function(file) {
+    for (
+        let i = 0;
+        i < 80;
+        i++
+    ) {
 
-                return `
-                    https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}
-                `;
+        portalParticles.push({
 
-            }
+            angle:
+                Math.random()
+                * Math.PI
+                * 2,
+
+            radius:
+                60 +
+                Math.random()
+                * 180,
+
+            speed:
+                0.2 +
+                Math.random()
+                * 0.8,
+
+            size:
+                1 +
+                Math.random()
+                * 3
 
         });
 
+    }
 
-    mediaPipeHands.setOptions({
-
-        maxNumHands: 2,
-
-        modelComplexity: 1,
-
-        minDetectionConfidence: 0.6,
-
-        minTrackingConfidence: 0.6
-
-    });
+}
 
 
-    mediaPipeHands.onResults(
-        onHandsResults
-    );
+function drawPortal() {
+
+    if (
+        !portalEnabled ||
+        currentHands.length < 2
+    ) {
+        return;
+    }
 
 
-    camera =
-        new Camera(
-            video,
-            {
+    const h1 =
+        currentHands[0];
 
-                onFrame: async function() {
+    const h2 =
+        currentHands[1];
 
-                    try {
 
-                        await mediaPipeHands
-                            .send({
-                                image: video
-                            });
+    const p1 =
+        mapPoint(
+            h1[8]
+        );
 
-                    }
-
-                    catch(error) {
-
-                        console.error(
-                            "MediaPipe error:",
-                            error
-                        );
-
-                    }
-
-                },
-
-                width: 1280,
-
-                height: 720,
-
-                facingMode: "user"
-
-            }
+    const p2 =
+        mapPoint(
+            h2[8]
         );
 
 
-    camera.start();
+    const cx =
+        (p1.x + p2.x) / 2;
 
-}
-
-
-/* =========================================================
-   HAND RESULTS
-========================================================= */
-
-function onHandsResults(results) {
-
-    currentHands =
-        results.multiHandLandmarks || [];
+    const cy =
+        (p1.y + p2.y) / 2;
 
 
-    handsCount.innerText =
-        currentHands.length;
+    const distanceHands =
+        Math.hypot(
+            p1.x - p2.x,
+            p1.y - p2.y
+        );
 
 
-    if (
-        currentHands.length > 0
+    const radius =
+        Math.max(
+            40,
+            Math.min(
+                distanceHands * 0.55,
+                240
+            )
+        );
+
+
+    ctx.save();
+
+
+    ctx.translate(
+        cx,
+        cy
+    );
+
+
+    ctx.rotate(
+        time * 0.4
+    );
+
+
+    for (
+        let ring = 0;
+        ring < 3;
+        ring++
     ) {
 
-        statusDisplay.innerText =
-            "Hand detected • Move your hand";
+        ctx.beginPath();
+
+
+        ctx.arc(
+            0,
+            0,
+            radius +
+            ring * 14,
+            0,
+            Math.PI * 2
+        );
+
+
+        ctx.strokeStyle =
+            themes[currentTheme](
+                time,
+                ring,
+                3
+            );
+
+
+        ctx.lineWidth =
+            3;
+
+
+        ctx.shadowBlur =
+            20;
+
+
+        ctx.shadowColor =
+            ctx.strokeStyle;
+
+
+        ctx.globalAlpha =
+            0.65 -
+            ring * 0.15;
+
+
+        ctx.stroke();
 
     }
 
-    else {
 
-        statusDisplay.innerText =
-            "Camera active • Show your hand";
+    for (
+        let i = 0;
+        i < portalParticles.length;
+        i++
+    ) {
+
+        const p =
+            portalParticles[i];
+
+
+        const a =
+            p.angle +
+            time * p.speed;
+
+
+        const x =
+            Math.cos(a)
+            * (
+                radius +
+                Math.sin(
+                    time * 2 + i
+                ) * 15
+            );
+
+        const y =
+            Math.sin(a)
+            * (
+                radius +
+                Math.sin(
+                    time * 2 + i
+                ) * 15
+            );
+
+
+        ctx.beginPath();
+
+
+        ctx.arc(
+            x,
+            y,
+            p.size,
+            0,
+            Math.PI * 2
+        );
+
+
+        ctx.fillStyle =
+            themes[currentTheme](
+                time,
+                i,
+                5
+            );
+
+
+        ctx.globalAlpha =
+            0.8;
+
+
+        ctx.fill();
 
     }
+
+
+    ctx.restore();
+
+    ctx.globalAlpha =
+        1;
 
 }
 
 
-/* =========================================================
+/* =====================================================
+   POINT MAPPING
+===================================================== */
+
+function mapPoint(point) {
+
+    return {
+
+        x:
+            point.x * width,
+
+        y:
+            point.y * height
+
+    };
+
+}
+
+
+/* =====================================================
    DISTANCE
-========================================================= */
+===================================================== */
 
 function distance(a,b) {
 
@@ -1089,26 +1684,9 @@ function distance(a,b) {
 }
 
 
-/* =========================================================
-   MAP HAND TO SCREEN
-========================================================= */
-
-function mapPoint(point) {
-
-    return {
-
-        x: point.x * width,
-
-        y: point.y * height
-
-    };
-
-}
-
-
-/* =========================================================
+/* =====================================================
    PARTICLES
-========================================================= */
+===================================================== */
 
 function createParticles(
     x,
@@ -1140,7 +1718,8 @@ function createParticles(
             life: 1,
 
             size:
-                Math.random() * 3 + 1,
+                Math.random()
+                * 3 + 1,
 
             color: color
 
@@ -1151,11 +1730,11 @@ function createParticles(
 }
 
 
-/* =========================================================
+/* =====================================================
    SHOCKWAVE
-========================================================= */
+===================================================== */
 
-function shockwave(
+function createShockwave(
     x,
     y,
     color
@@ -1170,8 +1749,9 @@ function shockwave(
         radius: 5,
 
         maxRadius:
-            120 +
-            Math.random() * 120,
+            100 +
+            Math.random()
+            * 150,
 
         life: 1,
 
@@ -1182,287 +1762,15 @@ function shockwave(
 }
 
 
-/* =========================================================
-   GESTURE DETECTION
-========================================================= */
-
-let previousPinch =
-    [false,false];
-
-
-function detectGestures() {
-
-    if (
-        currentHands.length === 0
-    ) {
-
-        gestureDisplay.innerText =
-            "None";
-
-        spreadDisplay.innerText =
-            "0%";
-
-        return;
-
-    }
-
-
-    let pinching =
-        false;
-
-
-    currentHands.forEach(
-        (hand,index) => {
-
-            const thumb =
-                hand[4];
-
-            const indexFinger =
-                hand[8];
-
-
-            const d =
-                distance(
-                    thumb,
-                    indexFinger
-                );
-
-
-            const isPinching =
-                d < 0.055;
-
-
-            if (
-                isPinching &&
-                !previousPinch[index]
-            ) {
-
-                const point = {
-
-                    x:
-                        (
-                            thumb.x +
-                            indexFinger.x
-                        ) / 2,
-
-                    y:
-                        (
-                            thumb.y +
-                            indexFinger.y
-                        ) / 2
-
-                };
-
-
-                const screenPoint =
-                    mapPoint(point);
-
-
-                shockwave(
-
-                    screenPoint.x,
-
-                    screenPoint.y,
-
-                    themes[currentTheme](
-                        time,
-                        index,
-                        5
-                    )
-
-                );
-
-
-                createParticles(
-
-                    screenPoint.x,
-
-                    screenPoint.y,
-
-                    themes[currentTheme](
-                        time,
-                        index,
-                        5
-                    ),
-
-                    15
-
-                );
-
-            }
-
-
-            previousPinch[index] =
-                isPinching;
-
-
-            if (isPinching) {
-
-                pinching = true;
-
-            }
-
-        }
-    );
-
-
-    if (pinching) {
-
-        gestureDisplay.innerText =
-            "PINCH";
-
-    }
-
-    else {
-
-        gestureDisplay.innerText =
-            "Open Hand";
-
-    }
-
-
-    /* =========================================
-       SPREAD
-    ========================================= */
-
-    const hand =
-        currentHands[0];
-
-
-    const spread =
-        distance(
-            hand[8],
-            hand[20]
-        );
-
-
-    const percentage =
-        Math.min(
-            Math.round(
-                spread * 300
-            ),
-            100
-        );
-
-
-    spreadDisplay.innerText =
-        percentage + "%";
-
-}
-
-
-/* =========================================================
-   BACKGROUND
-========================================================= */
-
-let matrixDrops = [];
-
-function initMatrix() {
-
-    const columns =
-        Math.floor(
-            width / 18
-        );
-
-    matrixDrops =
-        new Array(columns)
-        .fill(0)
-        .map(
-            () =>
-                Math.random()
-                * height
-        );
-
-}
-
-
-initMatrix();
-
-
-function drawBackground() {
-
-    /* Slight transparent fade */
-
-    bg.fillStyle =
-        "rgba(2,3,12,0.08)";
-
-    bg.fillRect(
-        0,
-        0,
-        width,
-        height
-    );
-
-
-    bg.font =
-        "16px monospace";
-
-
-    for (
-        let i = 0;
-        i < matrixDrops.length;
-        i++
-    ) {
-
-        if (
-            Math.random() > 0.93
-        ) {
-
-            const char =
-                String.fromCharCode(
-                    0x30A0 +
-                    Math.random() * 96
-                );
-
-
-            bg.fillStyle =
-                themes[currentTheme](
-                    time,
-                    i,
-                    matrixDrops.length
-                );
-
-
-            bg.fillText(
-
-                char,
-
-                i * 18,
-
-                matrixDrops[i]
-
-            );
-
-        }
-
-
-        matrixDrops[i] +=
-            1.5;
-
-
-        if (
-            matrixDrops[i] >
-            height
-        ) {
-
-            matrixDrops[i] =
-                0;
-
-        }
-
-    }
-
-}
-
-
-/* =========================================================
-   PARTICLE UPDATE
-========================================================= */
+/* =====================================================
+   UPDATE PARTICLES
+===================================================== */
 
 function updateParticles() {
 
     for (
-        let i = particles.length - 1;
+        let i =
+            particles.length - 1;
         i >= 0;
         i--
     ) {
@@ -1471,13 +1779,17 @@ function updateParticles() {
             particles[i];
 
 
-        p.x += p.vx;
+        p.x +=
+            p.vx;
 
-        p.y += p.vy;
+        p.y +=
+            p.vy;
 
-        p.vy += 0.05;
+        p.vy +=
+            0.04;
 
-        p.life -= 0.018;
+        p.life -=
+            0.018;
 
 
         if (
@@ -1501,14 +1813,15 @@ function updateParticles() {
             p.life;
 
 
-        ctx.shadowBlur =
-            15;
-
-        ctx.shadowColor =
+        ctx.fillStyle =
             p.color;
 
 
-        ctx.fillStyle =
+        ctx.shadowBlur =
+            15;
+
+
+        ctx.shadowColor =
             p.color;
 
 
@@ -1516,17 +1829,11 @@ function updateParticles() {
 
 
         ctx.arc(
-
             p.x,
-
             p.y,
-
             p.size,
-
             0,
-
             Math.PI * 2
-
         );
 
 
@@ -1540,14 +1847,15 @@ function updateParticles() {
 }
 
 
-/* =========================================================
-   SHOCKWAVES
-========================================================= */
+/* =====================================================
+   UPDATE SHOCKWAVES
+===================================================== */
 
 function updateShockwaves() {
 
     for (
-        let i = ripples.length - 1;
+        let i =
+            ripples.length - 1;
         i >= 0;
         i--
     ) {
@@ -1557,9 +1865,10 @@ function updateShockwaves() {
 
 
         r.radius +=
-            (r.maxRadius -
-             r.radius)
-            * 0.08;
+            (
+                r.maxRadius -
+                r.radius
+            ) * 0.08;
 
 
         r.life -=
@@ -1594,6 +1903,7 @@ function updateShockwaves() {
         ctx.shadowBlur =
             25;
 
+
         ctx.shadowColor =
             r.color;
 
@@ -1606,17 +1916,11 @@ function updateShockwaves() {
 
 
         ctx.arc(
-
             r.x,
-
             r.y,
-
             r.radius,
-
             0,
-
             Math.PI * 2
-
         );
 
 
@@ -1630,22 +1934,151 @@ function updateShockwaves() {
 }
 
 
-/* =========================================================
+/* =====================================================
+   TRAILS
+===================================================== */
+
+function drawTrails() {
+
+    if (
+        !trailsEnabled ||
+        currentHands.length === 0
+    ) {
+        return;
+    }
+
+
+    currentHands.forEach(
+        hand => {
+
+            FINGER_TIPS.forEach(
+                (tip,index) => {
+
+                    const p =
+                        mapPoint(
+                            hand[tip]
+                        );
+
+
+                    trailPoints.push({
+
+                        x: p.x,
+
+                        y: p.y,
+
+                        life: 1,
+
+                        color:
+                            themes[
+                                currentTheme
+                            ](
+                                time,
+                                index,
+                                5
+                            )
+
+                    });
+
+                }
+            );
+
+        }
+    );
+
+
+    if (
+        trailPoints.length >
+        350
+    ) {
+
+        trailPoints.splice(
+            0,
+            trailPoints.length - 350
+        );
+
+    }
+
+
+    for (
+        let i =
+            trailPoints.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const p =
+            trailPoints[i];
+
+
+        p.life -=
+            0.025;
+
+
+        if (
+            p.life <= 0
+        ) {
+
+            trailPoints.splice(
+                i,
+                1
+            );
+
+            continue;
+
+        }
+
+
+        ctx.save();
+
+
+        ctx.globalAlpha =
+            p.life * 0.5;
+
+
+        ctx.fillStyle =
+            p.color;
+
+
+        ctx.shadowBlur =
+            12;
+
+
+        ctx.shadowColor =
+            p.color;
+
+
+        ctx.beginPath();
+
+
+        ctx.arc(
+            p.x,
+            p.y,
+            2.5,
+            0,
+            Math.PI * 2
+        );
+
+
+        ctx.fill();
+
+
+        ctx.restore();
+
+    }
+
+}
+
+
+/* =====================================================
    DRAW HANDS
-========================================================= */
-
-const fingerTips =
-    [4,8,12,16,20];
-
+===================================================== */
 
 function drawHands() {
 
     if (
         currentHands.length === 0
     ) {
-
         return;
-
     }
 
 
@@ -1660,15 +2093,14 @@ function drawHands() {
                 );
 
 
-            /* =====================================
-               SKELETON
-            ===================================== */
+            /* SKELETON */
 
             ctx.save();
 
 
             ctx.shadowBlur =
                 15;
+
 
             ctx.shadowColor =
                 color;
@@ -1684,9 +2116,11 @@ function drawHands() {
 
                 {
 
-                    color: color,
+                    color:
+                        color,
 
-                    lineWidth: 3
+                    lineWidth:
+                        3
 
                 }
 
@@ -1696,11 +2130,9 @@ function drawHands() {
             ctx.restore();
 
 
-            /* =====================================
-               LANDMARKS
-            ===================================== */
+            /* LANDMARKS */
 
-            fingerTips.forEach(
+            FINGER_TIPS.forEach(
                 (tip,index) => {
 
                     const point =
@@ -1723,6 +2155,7 @@ function drawHands() {
                     ctx.shadowBlur =
                         25;
 
+
                     ctx.shadowColor =
                         tipColor;
 
@@ -1735,17 +2168,11 @@ function drawHands() {
 
 
                     ctx.arc(
-
                         point.x,
-
                         point.y,
-
                         5,
-
                         0,
-
                         Math.PI * 2
-
                     );
 
 
@@ -1755,11 +2182,9 @@ function drawHands() {
                     ctx.restore();
 
 
-                    /* particles */
-
                     if (
                         Math.random() >
-                        0.7
+                        0.72
                     ) {
 
                         createParticles(
@@ -1784,32 +2209,32 @@ function drawHands() {
     );
 
 
-    /* =====================================================
-       TWO-HAND CONNECTION
-    ===================================================== */
+    /* =================================================
+       CONNECT TWO HANDS
+    ================================================= */
 
     if (
         currentHands.length >= 2
     ) {
 
-        const hand1 =
+        const h1 =
             currentHands[0];
 
-        const hand2 =
+        const h2 =
             currentHands[1];
 
 
-        fingerTips.forEach(
+        FINGER_TIPS.forEach(
             (tip,index) => {
 
                 const p1 =
                     mapPoint(
-                        hand1[tip]
+                        h1[tip]
                     );
 
                 const p2 =
                     mapPoint(
-                        hand2[tip]
+                        h2[tip]
                     );
 
 
@@ -1824,19 +2249,20 @@ function drawHands() {
                 ctx.save();
 
 
-                ctx.shadowBlur =
-                    20;
-
-                ctx.shadowColor =
-                    color;
-
-
                 ctx.strokeStyle =
                     color;
 
 
                 ctx.lineWidth =
-                    3;
+                    2.5;
+
+
+                ctx.shadowBlur =
+                    18;
+
+
+                ctx.shadowColor =
+                    color;
 
 
                 ctx.beginPath();
@@ -1859,148 +2285,675 @@ function drawHands() {
 
                 ctx.restore();
 
+
+                /* Lightning */
+
+                if (
+                    Math.random() >
+                    0.72
+                ) {
+
+                    const dx =
+                        p2.x - p1.x;
+
+                    const dy =
+                        p2.y - p1.y;
+
+
+                    const midX =
+                        (p1.x+p2.x)/2
+                        +
+                        (Math.random()-0.5)
+                        * 30;
+
+                    const midY =
+                        (p1.y+p2.y)/2
+                        +
+                        (Math.random()-0.5)
+                        * 30;
+
+
+                    ctx.save();
+
+
+                    ctx.strokeStyle =
+                        "#ffffff";
+
+
+                    ctx.shadowBlur =
+                        20;
+
+
+                    ctx.shadowColor =
+                        color;
+
+
+                    ctx.lineWidth =
+                        2;
+
+
+                    ctx.beginPath();
+
+
+                    ctx.moveTo(
+                        p1.x,
+                        p1.y
+                    );
+
+
+                    ctx.lineTo(
+                        midX,
+                        midY
+                    );
+
+
+                    ctx.lineTo(
+                        p2.x,
+                        p2.y
+                    );
+
+
+                    ctx.stroke();
+
+
+                    ctx.restore();
+
+                }
+
             }
         );
-
-
-        /* =================================================
-           MANDALA
-        ================================================= */
-
-        const points = [];
-
-
-        fingerTips.forEach(
-            tip => {
-
-                points.push(
-                    mapPoint(
-                        hand1[tip]
-                    )
-                );
-
-            }
-        );
-
-
-        fingerTips.forEach(
-            tip => {
-
-                points.push(
-                    mapPoint(
-                        hand2[tip]
-                    )
-                );
-
-            }
-        );
-
-
-        let centerX = 0;
-
-        let centerY = 0;
-
-
-        points.forEach(
-            p => {
-
-                centerX +=
-                    p.x;
-
-                centerY +=
-                    p.y;
-
-            }
-        );
-
-
-        centerX /=
-            points.length;
-
-        centerY /=
-            points.length;
-
-
-        ctx.save();
-
-
-        ctx.translate(
-            centerX,
-            centerY
-        );
-
-
-        ctx.rotate(
-            time * 0.5
-        );
-
-
-        ctx.strokeStyle =
-            "rgba(255,255,255,0.25)";
-
-
-        ctx.lineWidth =
-            1;
-
-
-        for (
-            let i = 0;
-            i < points.length;
-            i++
-        ) {
-
-            const a =
-                points[i];
-
-            const b =
-                points[
-                    (i + 3)
-                    % points.length
-                ];
-
-
-            ctx.beginPath();
-
-
-            ctx.moveTo(
-
-                a.x - centerX,
-
-                a.y - centerY
-
-            );
-
-
-            ctx.lineTo(
-
-                b.x - centerX,
-
-                b.y - centerY
-
-            );
-
-
-            ctx.stroke();
-
-        }
-
-
-        ctx.restore();
 
     }
 
 }
 
 
-/* =========================================================
-   MAIN RENDER LOOP
-========================================================= */
+/* =====================================================
+   GESTURES
+===================================================== */
 
-function renderLoop(timestamp) {
+function detectGestures() {
+
+    if (
+        currentHands.length === 0
+    ) {
+
+        gestureDisplay.innerText =
+            "None";
+
+        spreadDisplay.innerText =
+            "0%";
+
+        energy =
+            Math.max(
+                10,
+                energy - 0.1
+            );
+
+        return;
+
+    }
+
+
+    let pinch =
+        false;
+
+
+    let peace =
+        false;
+
+
+    currentHands.forEach(
+        (hand,index) => {
+
+            const thumb =
+                hand[4];
+
+            const indexFinger =
+                hand[8];
+
+
+            const pinchDistance =
+                distance(
+                    thumb,
+                    indexFinger
+                );
+
+
+            const isPinching =
+                pinchDistance <
+                0.055;
+
+
+            if (
+                isPinching
+            ) {
+
+                pinch =
+                    true;
+
+            }
+
+
+            if (
+                isPinching &&
+                !previousPinch[index]
+            ) {
+
+                const x =
+                    (
+                        thumb.x +
+                        indexFinger.x
+                    ) / 2 * width;
+
+
+                const y =
+                    (
+                        thumb.y +
+                        indexFinger.y
+                    ) / 2 * height;
+
+
+                createShockwave(
+
+                    x,
+
+                    y,
+
+                    themes[currentTheme](
+                        time,
+                        index,
+                        5
+                    )
+
+                );
+
+
+                createParticles(
+
+                    x,
+
+                    y,
+
+                    themes[currentTheme](
+                        time,
+                        index,
+                        5
+                    ),
+
+                    20
+
+                );
+
+
+                energy =
+                    Math.min(
+                        100,
+                        energy + 8
+                    );
+
+            }
+
+
+            previousPinch[index] =
+                isPinching;
+
+
+            /* PEACE DETECTION */
+
+            const indexOpen =
+                distance(
+                    hand[8],
+                    hand[0]
+                ) > 0.18;
+
+
+            const middleOpen =
+                distance(
+                    hand[12],
+                    hand[0]
+                ) > 0.18;
+
+
+            const ringClosed =
+                distance(
+                    hand[16],
+                    hand[0]
+                ) < 0.15;
+
+
+            const pinkyClosed =
+                distance(
+                    hand[20],
+                    hand[0]
+                ) < 0.15;
+
+
+            if (
+                indexOpen &&
+                middleOpen &&
+                ringClosed &&
+                pinkyClosed
+            ) {
+
+                peace =
+                    true;
+
+            }
+
+        }
+    );
+
+
+    if (pinch) {
+
+        gestureDisplay.innerText =
+            "PINCH 🤏";
+
+    }
+
+    else if (peace) {
+
+        gestureDisplay.innerText =
+            "PEACE ✌️";
+
+    }
+
+    else {
+
+        gestureDisplay.innerText =
+            "OPEN HAND ✋";
+
+    }
+
+
+    /* SPREAD */
+
+    const hand =
+        currentHands[0];
+
+
+    const spread =
+        distance(
+            hand[8],
+            hand[20]
+        );
+
+
+    const spreadPercent =
+        Math.min(
+            100,
+            Math.round(
+                spread * 300
+            )
+        );
+
+
+    spreadDisplay.innerText =
+        spreadPercent + "%";
+
+
+    /* ENERGY */
+
+    energy =
+        Math.min(
+            100,
+            energy +
+            spreadPercent * 0.002
+        );
+
+}
+
+
+/* =====================================================
+   UPDATE ENERGY UI
+===================================================== */
+
+function updateEnergy() {
+
+    energyFill.style.width =
+        Math.round(energy) + "%";
+
+    energyText.innerText =
+        Math.round(energy) + "%";
+
+}
+
+
+/* =====================================================
+   MEDIAPIPE RESULTS
+===================================================== */
+
+function onHandsResults(
+    results
+) {
+
+    currentHands =
+        results.multiHandLandmarks || [];
+
+
+    handsCount.innerText =
+        currentHands.length;
+
+
+    if (
+        currentHands.length > 0
+    ) {
+
+        statusDisplay.innerText =
+            "Hand detected • Move your hand ✋";
+
+    }
+
+    else {
+
+        statusDisplay.innerText =
+            "Camera active • Show your hand";
+
+    }
+
+}
+
+
+/* =====================================================
+   START CAMERA
+===================================================== */
+
+async function startExperience() {
+
+    startBtn.disabled =
+        true;
+
+    startBtn.innerText =
+        "STARTING...";
+
+
+    statusDisplay.innerText =
+        "Requesting camera permission...";
+
+
+    try {
+
+        /* =============================================
+           CAMERA PERMISSION
+        ============================================= */
+
+        cameraStream =
+            await navigator
+            .mediaDevices
+            .getUserMedia({
+
+                video: {
+
+                    facingMode:
+                        "user",
+
+                    width: {
+                        ideal: 1280
+                    },
+
+                    height: {
+                        ideal: 720
+                    }
+
+                },
+
+                audio: false
+
+            });
+
+
+        /* =============================================
+           CONNECT STREAM
+        ============================================= */
+
+        video.srcObject =
+            cameraStream;
+
+
+        video.muted =
+            true;
+
+
+        video.playsInline =
+            true;
+
+
+        video.style.display =
+            "block";
+
+
+        video.style.visibility =
+            "visible";
+
+
+        video.style.opacity =
+            "1";
+
+
+        /* =============================================
+           WAIT VIDEO
+        ============================================= */
+
+        await new Promise(
+            resolve => {
+
+                if (
+                    video.readyState >= 2
+                ) {
+
+                    resolve();
+
+                }
+
+                else {
+
+                    video.onloadedmetadata =
+                        () => resolve();
+
+                }
+
+            }
+        );
+
+
+        await video.play();
+
+
+        console.log(
+            "Camera resolution:",
+            video.videoWidth,
+            "x",
+            video.videoHeight
+        );
+
+
+        statusDisplay.innerText =
+            "Camera active • Loading hand tracking...";
+
+
+        /* =============================================
+           MEDIAPIPE
+        ============================================= */
+
+        initMediaPipe();
+
+
+        /* =============================================
+           HIDE START SCREEN
+        ============================================= */
+
+        setTimeout(
+            () => {
+
+                startOverlay.classList.add(
+                    "hidden"
+                );
+
+            },
+            300
+        );
+
+
+        /* =============================================
+           RENDER
+        ============================================= */
+
+        requestAnimationFrame(
+            renderLoop
+        );
+
+    }
+
+    catch(error) {
+
+        console.error(
+            "Camera error:",
+            error
+        );
+
+
+        statusDisplay.innerText =
+            "Camera could not start";
+
+
+        startBtn.disabled =
+            false;
+
+
+        startBtn.innerText =
+            "TRY AGAIN";
+
+
+        const errorBox =
+            document.getElementById(
+                "errorBox"
+            );
+
+
+        const errorText =
+            document.getElementById(
+                "errorText"
+            );
+
+
+        errorText.innerText =
+            error.message ||
+            "Please allow camera access and try again.";
+
+
+        errorBox.style.display =
+            "block";
+
+    }
+
+}
+
+
+/* =====================================================
+   INITIALIZE MEDIAPIPE
+===================================================== */
+
+function initMediaPipe() {
+
+    mediaPipeHands =
+        new Hands({
+
+            locateFile:
+                function(file) {
+
+                    return (
+                        "https://cdn.jsdelivr.net/" +
+                        "npm/@mediapipe/hands/" +
+                        file
+                    );
+
+                }
+
+        });
+
+
+    mediaPipeHands.setOptions({
+
+        maxNumHands:
+            2,
+
+        modelComplexity:
+            1,
+
+        minDetectionConfidence:
+            0.6,
+
+        minTrackingConfidence:
+            0.6
+
+    });
+
+
+    mediaPipeHands.onResults(
+        onHandsResults
+    );
+
+
+    camera =
+        new Camera(
+            video,
+            {
+
+                onFrame:
+                    async function() {
+
+                        try {
+
+                            await mediaPipeHands
+                                .send({
+                                    image:
+                                        video
+                                });
+
+                        }
+
+                        catch(error) {
+
+                            console.error(
+                                error
+                            );
+
+                        }
+
+                    },
+
+                width:
+                    1280,
+
+                height:
+                    720,
+
+                facingMode:
+                    "user"
+
+            }
+        );
+
+
+    camera.start();
+
+}
+
+
+/* =====================================================
+   RENDER LOOP
+===================================================== */
+
+function renderLoop(
+    timestamp
+) {
 
     const delta =
-        (timestamp -
-         lastTime) / 1000;
+        (
+            timestamp -
+            lastTime
+        ) / 1000;
 
 
     lastTime =
@@ -2025,7 +2978,8 @@ function renderLoop(timestamp) {
         fpsDisplay.innerText =
             frames;
 
-        frames = 0;
+        frames =
+            0;
 
         fpsTime =
             timestamp;
@@ -2033,39 +2987,35 @@ function renderLoop(timestamp) {
     }
 
 
-    /* Background */
+    /* =============================================
+       BACKGROUND
+    ============================================= */
 
     drawBackground();
 
 
-    /* Fade effect canvas */
+    /* =============================================
+       IMPORTANT
 
-    ctx.globalCompositeOperation =
-        "destination-out";
+       Clear effect canvas instead of painting black.
+       This is what keeps the camera visible.
+    ============================================= */
 
-
-    ctx.fillStyle =
-        "rgba(0,0,0,0.16)";
-
-
-    ctx.fillRect(
-
+    ctx.clearRect(
         0,
-
         0,
-
         width,
-
         height
-
     );
 
 
-    ctx.globalCompositeOperation =
-        "source-over";
+    /* =============================================
+       EFFECTS
+    ============================================= */
 
+    drawTrails();
 
-    /* Effects */
+    drawPortal();
 
     updateParticles();
 
@@ -2075,6 +3025,12 @@ function renderLoop(timestamp) {
 
     detectGestures();
 
+    updateEnergy();
+
+
+    /* =============================================
+       NEXT FRAME
+    ============================================= */
 
     requestAnimationFrame(
         renderLoop
@@ -2083,15 +3039,309 @@ function renderLoop(timestamp) {
 }
 
 
-/* =========================================================
+/* =====================================================
+   THEME SWITCHER
+===================================================== */
+
+document
+.querySelectorAll(
+    ".theme-btn"
+)
+.forEach(
+    button => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                document
+                .querySelectorAll(
+                    ".theme-btn"
+                )
+                .forEach(
+                    b =>
+                        b.classList
+                        .remove(
+                            "active"
+                        )
+                );
+
+
+                button.classList.add(
+                    "active"
+                );
+
+
+                currentTheme =
+                    button.dataset.theme;
+
+
+                document.documentElement
+                    .style
+                    .setProperty(
+                        "--accent",
+                        themes[
+                            currentTheme
+                        ](
+                            time,
+                            1,
+                            5
+                        )
+                    );
+
+            }
+        );
+
+    }
+);
+
+
+/* =====================================================
+   TRAIL BUTTON
+===================================================== */
+
+trailBtn.addEventListener(
+    "click",
+    () => {
+
+        trailsEnabled =
+            !trailsEnabled;
+
+
+        trailBtn.innerText =
+            trailsEnabled
+                ? "✨ Trails: ON"
+                : "✨ Trails: OFF";
+
+
+        trailBtn.classList.toggle(
+            "active",
+            trailsEnabled
+        );
+
+
+        if (
+            !trailsEnabled
+        ) {
+
+            trailPoints =
+                [];
+
+        }
+
+    }
+);
+
+
+/* =====================================================
+   PORTAL BUTTON
+===================================================== */
+
+portalBtn.addEventListener(
+    "click",
+    () => {
+
+        portalEnabled =
+            !portalEnabled;
+
+
+        portalBtn.innerText =
+            portalEnabled
+                ? "🌀 Portal: ON"
+                : "🌀 Portal: OFF";
+
+
+        portalBtn.classList.toggle(
+            "active",
+            portalEnabled
+        );
+
+    }
+);
+
+
+/* =====================================================
+   CAPTURE SCREENSHOT
+===================================================== */
+
+captureBtn.addEventListener(
+    "click",
+    () => {
+
+        const capture =
+            document.createElement(
+                "canvas"
+            );
+
+
+        capture.width =
+            video.videoWidth ||
+            width;
+
+
+        capture.height =
+            video.videoHeight ||
+            height;
+
+
+        const c =
+            capture.getContext(
+                "2d"
+            );
+
+
+        /*
+           Camera
+        */
+
+        c.save();
+
+        c.translate(
+            capture.width,
+            0
+        );
+
+        c.scale(
+            -1,
+            1
+        );
+
+
+        c.drawImage(
+
+            video,
+
+            0,
+            0,
+
+            capture.width,
+            capture.height
+
+        );
+
+
+        c.restore();
+
+
+        /*
+           AR effects
+        */
+
+        c.drawImage(
+
+            effectCanvas,
+
+            0,
+            0,
+
+            capture.width,
+            capture.height
+
+        );
+
+
+        /*
+           Download
+        */
+
+        const link =
+            document.createElement(
+                "a"
+            );
+
+
+        link.download =
+            "neon-aura-capture.png";
+
+
+        link.href =
+            capture.toDataURL(
+                "image/png"
+            );
+
+
+        link.click();
+
+    }
+);
+
+
+/* =====================================================
+   CLOSE ERROR
+===================================================== */
+
+document
+.getElementById(
+    "errorBox"
+)
+.addEventListener(
+    "click",
+    () => {
+
+        document
+        .getElementById(
+            "errorBox"
+        )
+        .style.display =
+            "none";
+
+    }
+);
+
+
+/* =====================================================
+   PAGE STARTUP
+===================================================== */
+
+resize();
+
+createMatrix();
+
+createPortalParticles();
+
+
+console.log(
+    "================================="
+);
+
+console.log(
+    "NEON AURA AR"
+);
+
+console.log(
+    "System loaded successfully."
+);
+
+console.log(
+    "Camera will start after button click."
+);
+
+console.log(
+    "================================="
+);
+
+
+/* =====================================================
+   START BUTTON
+===================================================== */
+
+startBtn.addEventListener(
+    "click",
+    startExperience
+);
+
+
+/* =====================================================
    CLEANUP
-========================================================= */
+===================================================== */
 
 window.addEventListener(
     "beforeunload",
     () => {
 
-        if (cameraStream) {
+        if (
+            cameraStream
+        ) {
 
             cameraStream
                 .getTracks()
@@ -2103,15 +3353,6 @@ window.addEventListener(
         }
 
     }
-);
-
-
-/* =========================================================
-   INITIAL MESSAGE
-========================================================= */
-
-console.log(
-    "Neon Aura AR loaded successfully."
 );
 
 </script>
