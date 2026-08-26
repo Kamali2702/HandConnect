@@ -1,393 +1,750 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Neon Aura AR - Hand Tracking</title>
-
-    <!-- MediaPipe -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #050510;
-            font-family: Arial, sans-serif;
-            color: white;
-        }
-
-        /* CAMERA */
-        #video {
-            position: fixed;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-            z-index: 1;
-            filter: brightness(0.65) contrast(1.1);
-        }
-
-        /* EFFECT CANVAS */
-        #canvas {
-            position: fixed;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            transform: scaleX(-1);
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        /* START SCREEN */
-        #startScreen {
-            position: fixed;
-            inset: 0;
-            z-index: 20;
-
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-
-            background:
-                radial-gradient(
-                    circle at center,
-                    #15152d,
-                    #020207 70%
-                );
-        }
-
-        #startScreen h1 {
-            font-size: clamp(35px, 6vw, 70px);
-            font-weight: 300;
-            letter-spacing: 8px;
-            margin-bottom: 20px;
-        }
-
-        #startScreen p {
-            color: #999;
-            margin-bottom: 35px;
-            text-align: center;
-            padding: 0 20px;
-        }
-
-        #startBtn {
-            border: none;
-            border-radius: 40px;
-
-            padding: 18px 45px;
-
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-            letter-spacing: 2px;
-
-            cursor: pointer;
+<title>Neon Aura AR - Advanced Hand Tracking</title>
 
-            background:
-                linear-gradient(
-                    45deg,
-                    #ff00cc,
-                    #3333ff
-                );
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 
-            box-shadow:
-                0 0 20px #ff00cc,
-                0 0 40px rgba(51, 51, 255, 0.5);
+<style>
+:root {
+    --bg: #03030b;
+    --accent: #00ffcc;
+    --glass: rgba(10, 15, 30, 0.55);
+    --border: rgba(255,255,255,0.18);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-            transition: 0.3s;
-        }
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: white;
+    font-family:
+        Inter,
+        Arial,
+        Helvetica,
+        sans-serif;
+}
 
-        #startBtn:hover {
-            transform: scale(1.06);
-        }
+/* CAMERA */
 
-        #startBtn:disabled {
-            opacity: 0.6;
-            cursor: wait;
-        }
+#video {
+    position: fixed;
+    inset: 0;
 
-        /* HUD */
-        #hud {
-            position: fixed;
-            top: 20px;
-            left: 20px;
+    width: 100%;
+    height: 100%;
 
-            z-index: 10;
+    object-fit: cover;
 
-            display: none;
+    transform: scaleX(-1);
 
-            flex-direction: column;
-            gap: 12px;
-        }
+    z-index: 0;
 
-        .panel {
-            min-width: 220px;
+    filter:
+        brightness(0.58)
+        contrast(1.12)
+        saturate(1.1);
+}
 
-            padding: 16px 20px;
+/* CANVAS */
 
-            border-radius: 14px;
+#backgroundCanvas,
+#effectCanvas {
+    position: fixed;
+    inset: 0;
 
-            background: rgba(10, 10, 25, 0.55);
+    width: 100%;
+    height: 100%;
 
-            border: 1px solid rgba(255,255,255,0.18);
+    transform: scaleX(-1);
 
-            backdrop-filter: blur(15px);
+    pointer-events: none;
+}
 
-            box-shadow:
-                0 10px 40px rgba(0,0,0,0.4);
-        }
+#backgroundCanvas {
+    z-index: 1;
+}
 
-        .row {
-            display: flex;
-            justify-content: space-between;
+#effectCanvas {
+    z-index: 2;
+}
 
-            margin-bottom: 8px;
+/* START SCREEN */
 
-            color: #ddd;
-        }
+#startScreen {
+    position: fixed;
+    inset: 0;
 
-        .row:last-child {
-            margin-bottom: 0;
-        }
+    z-index: 100;
 
-        .value {
-            color: #00ffcc;
-            font-weight: bold;
-        }
+    display: flex;
+    flex-direction: column;
 
-        /* THEMES */
-        #themes {
-            position: fixed;
+    align-items: center;
+    justify-content: center;
 
-            bottom: 25px;
-            left: 50%;
+    text-align: center;
 
-            transform: translateX(-50%);
+    background:
+        radial-gradient(
+            circle at center,
+            #15153c 0%,
+            #070711 45%,
+            #010105 100%
+        );
 
-            z-index: 10;
+    backdrop-filter: blur(12px);
 
-            display: none;
+    transition:
+        opacity 0.5s ease,
+        visibility 0.5s ease;
+}
 
-            gap: 5px;
+#startScreen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
 
-            padding: 8px;
+#startScreen h1 {
+    font-size: clamp(35px, 7vw, 80px);
 
-            border-radius: 40px;
+    font-weight: 300;
 
-            background: rgba(10,10,25,0.6);
+    letter-spacing: 10px;
 
-            border: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 20px;
 
-            backdrop-filter: blur(15px);
-        }
+    text-shadow:
+        0 0 15px #00ffff,
+        0 0 35px #ff00cc;
+}
 
-        .theme {
-            border: none;
-            background: transparent;
+#startScreen p {
+    color: #aaa;
 
-            color: white;
+    max-width: 650px;
 
-            padding: 10px 15px;
+    line-height: 1.6;
 
-            border-radius: 25px;
+    padding: 0 20px;
 
-            cursor: pointer;
+    margin-bottom: 35px;
+}
 
-            font-weight: bold;
-        }
+#startButton {
+    border: none;
 
-        .theme.active {
-            background: rgba(255,255,255,0.18);
-            box-shadow: 0 0 15px rgba(255,255,255,0.15);
-        }
+    padding: 16px 42px;
 
-        /* ERROR */
-        #error {
-            position: fixed;
+    border-radius: 40px;
 
-            top: 20px;
-            left: 50%;
+    color: white;
 
-            transform: translateX(-50%);
+    font-size: 16px;
 
-            z-index: 100;
+    font-weight: bold;
 
-            display: none;
+    letter-spacing: 2px;
 
-            max-width: 90%;
+    cursor: pointer;
 
-            padding: 14px 20px;
+    background:
+        linear-gradient(
+            45deg,
+            #ff00cc,
+            #3333ff
+        );
 
-            border-radius: 10px;
+    box-shadow:
+        0 0 20px #ff00cc88,
+        0 0 50px #3333ff55;
 
-            background: rgba(180,0,40,0.9);
+    transition: transform 0.2s ease;
+}
 
-            color: white;
+#startButton:hover {
+    transform: scale(1.06);
+}
 
-            text-align: center;
-        }
-    </style>
+/* HUD */
+
+#hud {
+    position: fixed;
+
+    top: 20px;
+    left: 20px;
+
+    z-index: 20;
+
+    display: none;
+
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+.panel {
+    min-width: 235px;
+
+    padding: 15px 18px;
+
+    border-radius: 15px;
+
+    background: var(--glass);
+
+    border: 1px solid var(--border);
+
+    backdrop-filter: blur(16px);
+
+    box-shadow:
+        0 15px 40px rgba(0,0,0,0.5);
+}
+
+.row {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 25px;
+
+    margin: 7px 0;
+
+    color: #ddd;
+
+    font-size: 14px;
+}
+
+.value {
+    color: var(--accent);
+
+    font-weight: bold;
+}
+
+/* POWER */
+
+.powerTitle {
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-top: 12px;
+
+    margin-bottom: 5px;
+
+    font-size: 13px;
+}
+
+.powerBackground {
+    width: 100%;
+
+    height: 7px;
+
+    overflow: hidden;
+
+    border-radius: 10px;
+
+    background: rgba(255,255,255,0.12);
+}
+
+#powerBar {
+    width: 0%;
+
+    height: 100%;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #00ffcc,
+            #00aaff,
+            #ff00cc,
+            white
+        );
+
+    box-shadow:
+        0 0 12px var(--accent);
+
+    transition: width 0.12s ease;
+}
+
+/* RIGHT CONTROLS */
+
+#controls {
+    position: fixed;
+
+    top: 20px;
+    right: 20px;
+
+    z-index: 20;
+
+    display: none;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.controlButton {
+    border: 1px solid var(--border);
+
+    border-radius: 20px;
+
+    padding: 9px 14px;
+
+    color: white;
+
+    background: var(--glass);
+
+    backdrop-filter: blur(12px);
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.controlButton:hover {
+    background: rgba(255,255,255,0.18);
+
+    transform: translateY(-2px);
+}
+
+/* THEMES */
+
+#themes {
+    position: fixed;
+
+    bottom: 20px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 20;
+
+    display: none;
+
+    gap: 6px;
+
+    max-width: 95vw;
+
+    overflow-x: auto;
+
+    padding: 7px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 30px;
+
+    background: var(--glass);
+
+    backdrop-filter: blur(15px);
+}
+
+.themeButton {
+    white-space: nowrap;
+
+    border: 1px solid transparent;
+
+    border-radius: 20px;
+
+    padding: 8px 13px;
+
+    color: white;
+
+    background: transparent;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.themeButton:hover {
+    background: rgba(255,255,255,0.12);
+}
+
+.themeButton.active {
+    background: rgba(255,255,255,0.18);
+
+    border-color: rgba(255,255,255,0.3);
+
+    box-shadow:
+        0 0 15px rgba(255,255,255,0.15);
+}
+
+/* STATUS */
+
+#status {
+    position: fixed;
+
+    bottom: 82px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 20;
+
+    display: none;
+
+    padding: 9px 18px;
+
+    border-radius: 25px;
+
+    background: rgba(0,0,0,0.55);
+
+    backdrop-filter: blur(10px);
+
+    color: #ddd;
+
+    font-size: 13px;
+
+    white-space: nowrap;
+}
+
+/* ERROR */
+
+#errorBox {
+    position: fixed;
+
+    top: 20px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 200;
+
+    display: none;
+
+    max-width: 90%;
+
+    padding: 13px 18px;
+
+    border-radius: 10px;
+
+    background: rgba(180,0,50,0.92);
+
+    color: white;
+
+    text-align: center;
+}
+
+/* MOBILE */
+
+@media (max-width: 700px) {
+
+    #hud {
+        top: 10px;
+        left: 10px;
+    }
+
+    .panel {
+        min-width: 190px;
+
+        padding: 10px 12px;
+    }
+
+    .row {
+        font-size: 12px;
+    }
+
+    #controls {
+        top: 10px;
+        right: 10px;
+    }
+
+    .controlButton {
+        padding: 7px 10px;
+
+        font-size: 11px;
+    }
+
+    #themes {
+        bottom: 10px;
+    }
+
+    .themeButton {
+        padding: 7px 9px;
+
+        font-size: 11px;
+    }
+}
+</style>
 </head>
 
 <body>
 
-    <!-- CAMERA -->
-    <video
-        id="video"
-        autoplay
-        playsinline
-        muted>
-    </video>
+<!-- CAMERA -->
+<video
+    id="video"
+    autoplay
+    playsinline
+    muted>
+</video>
 
-    <!-- EFFECTS -->
-    <canvas id="canvas"></canvas>
+<!-- CANVASES -->
+<canvas id="backgroundCanvas"></canvas>
+<canvas id="effectCanvas"></canvas>
 
-    <!-- START SCREEN -->
-    <div id="startScreen">
 
-        <h1>NEON AURA AR</h1>
+<!-- START -->
+<div id="startScreen">
 
-        <p>
-            Allow camera access and enter the hand tracking experience
-        </p>
+    <h1>NEON AURA AR</h1>
 
-        <button id="startBtn">
-            ENTER EXPERIENCE
-        </button>
+    <p>
+        Advanced hand tracking experience with
+        neon particles, energy portals, fingertip trails,
+        lightning and interactive gestures.
+    </p>
 
-    </div>
+    <button id="startButton">
+        ENTER EXPERIENCE
+    </button>
 
-    <!-- ERROR -->
-    <div id="error"></div>
+</div>
 
-    <!-- HUD -->
-    <div id="hud">
 
-        <div class="panel">
+<!-- ERROR -->
+<div id="errorBox"></div>
 
-            <div class="row">
-                <span>Hands Detected</span>
-                <span class="value" id="hands">
-                    0
-                </span>
-            </div>
 
-            <div class="row">
-                <span>FPS</span>
-                <span class="value" id="fps">
-                    0
-                </span>
-            </div>
+<!-- HUD -->
+<div id="hud">
 
+    <div class="panel">
+
+        <div class="row">
+            <span>Hands</span>
+            <span
+                class="value"
+                id="handsValue">
+                0
+            </span>
         </div>
 
-        <div class="panel">
+        <div class="row">
+            <span>FPS</span>
+            <span
+                class="value"
+                id="fpsValue">
+                0
+            </span>
+        </div>
 
-            <div class="row">
-                <span>Gesture</span>
-                <span class="value" id="gesture">
-                    None
-                </span>
-            </div>
+        <div class="row">
+            <span>Gesture</span>
+            <span
+                class="value"
+                id="gestureValue">
+                None
+            </span>
+        </div>
 
-            <div class="row">
-                <span>Spread</span>
-                <span class="value" id="spread">
-                    0%
-                </span>
-            </div>
+        <div class="row">
+            <span>Spread</span>
+            <span
+                class="value"
+                id="spreadValue">
+                0%
+            </span>
+        </div>
 
+        <div class="powerTitle">
+            <span>ENERGY POWER</span>
+
+            <span
+                class="value"
+                id="powerValue">
+                0%
+            </span>
+        </div>
+
+        <div class="powerBackground">
+            <div id="powerBar"></div>
         </div>
 
     </div>
 
-    <!-- THEMES -->
-    <div id="themes">
+</div>
 
-        <button class="theme active" data-theme="rainbow">
-            Rainbow
-        </button>
 
-        <button class="theme" data-theme="cyber">
-            Cyberpunk
-        </button>
+<!-- CONTROLS -->
+<div id="controls">
 
-        <button class="theme" data-theme="lava">
-            Lava
-        </button>
+    <button
+        class="controlButton"
+        id="captureButton">
+        📸 Capture
+    </button>
 
-        <button class="theme" data-theme="ocean">
-            Ocean
-        </button>
+    <button
+        class="controlButton"
+        id="trailButton">
+        ✨ Trails: ON
+    </button>
 
-        <button class="theme" data-theme="galaxy">
-            Galaxy
-        </button>
+    <button
+        class="controlButton"
+        id="portalButton">
+        🌀 Portal: ON
+    </button>
 
-    </div>
+</div>
+
+
+<!-- STATUS -->
+<div id="status">
+    Show your hand 🖐️
+</div>
+
+
+<!-- THEMES -->
+<div id="themes">
+
+    <button
+        class="themeButton active"
+        data-theme="Rainbow">
+        🌈 Rainbow
+    </button>
+
+    <button
+        class="themeButton"
+        data-theme="Cyberpunk">
+        💗 Cyberpunk
+    </button>
+
+    <button
+        class="themeButton"
+        data-theme="Lava">
+        🔥 Lava
+    </button>
+
+    <button
+        class="themeButton"
+        data-theme="Ocean">
+        🌊 Ocean
+    </button>
+
+    <button
+        class="themeButton"
+        data-theme="Galaxy">
+        🌌 Galaxy
+    </button>
+
+    <button
+        class="themeButton"
+        data-theme="Aurora">
+        🌈 Aurora
+    </button>
+
+    <button
+        class="themeButton"
+        data-theme="Ice">
+        ❄️ Ice
+    </button>
+
+    <button
+        class="themeButton"
+        data-theme="Inferno">
+        🔥 Inferno
+    </button>
+
+    <button
+        class="themeButton"
+        data-theme="Mystic">
+        🔮 Mystic
+    </button>
+
+    <button
+        class="themeButton"
+        data-theme="Toxic">
+        ☢️ Toxic
+    </button>
+
+</div>
 
 
 <script>
 
-/* =====================================
+/* =========================================================
    ELEMENTS
-===================================== */
+========================================================= */
 
 const video =
     document.getElementById("video");
 
-const canvas =
-    document.getElementById("canvas");
+const backgroundCanvas =
+    document.getElementById("backgroundCanvas");
+
+const effectCanvas =
+    document.getElementById("effectCanvas");
+
+const bg =
+    backgroundCanvas.getContext("2d");
 
 const ctx =
-    canvas.getContext("2d");
+    effectCanvas.getContext("2d");
 
 const startScreen =
     document.getElementById("startScreen");
 
-const startBtn =
-    document.getElementById("startBtn");
+const startButton =
+    document.getElementById("startButton");
 
 const hud =
     document.getElementById("hud");
 
+const controls =
+    document.getElementById("controls");
+
 const themes =
     document.getElementById("themes");
 
+const status =
+    document.getElementById("status");
+
 const errorBox =
-    document.getElementById("error");
+    document.getElementById("errorBox");
 
-const handsUI =
-    document.getElementById("hands");
+const handsValue =
+    document.getElementById("handsValue");
 
-const fpsUI =
-    document.getElementById("fps");
+const fpsValue =
+    document.getElementById("fpsValue");
 
-const gestureUI =
-    document.getElementById("gesture");
+const gestureValue =
+    document.getElementById("gestureValue");
 
-const spreadUI =
-    document.getElementById("spread");
+const spreadValue =
+    document.getElementById("spreadValue");
+
+const powerValue =
+    document.getElementById("powerValue");
+
+const powerBar =
+    document.getElementById("powerBar");
 
 
-/* =====================================
-   VARIABLES
-===================================== */
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
 
 let width =
     window.innerWidth;
@@ -395,90 +752,190 @@ let width =
 let height =
     window.innerHeight;
 
-let detectedHands = [];
+let currentTheme =
+    "Rainbow";
+
+let time = 0;
+
+let lastFrame =
+    performance.now();
+
+let fpsFrames = 0;
+
+let fpsTimer =
+    performance.now();
+
+let currentHands = [];
+
+let previousHands = [];
 
 let particles = [];
 
 let ripples = [];
 
-let animationTime = 0;
+let trails = [];
 
-let lastFrame = performance.now();
+let sparks = [];
 
-let frameCount = 0;
+let matrixDrops = [];
 
-let fpsTimer = performance.now();
+let trailEnabled = true;
 
-let currentTheme = "rainbow";
+let portalEnabled = true;
 
-const fingertips = [
-    4,
-    8,
-    12,
-    16,
-    20
-];
+let power = 0;
 
-let previousPinch = [
-    false,
-    false
-];
+let lastPinch =
+    [false, false];
+
+let cameraStream = null;
 
 
-/* =====================================
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const FINGER_TIPS =
+    [4, 8, 12, 16, 20];
+
+const FINGER_NAMES =
+    [
+        "Thumb",
+        "Index",
+        "Middle",
+        "Ring",
+        "Pinky"
+    ];
+
+
+/* =========================================================
    THEMES
-===================================== */
+========================================================= */
 
-const colors = {
+const themeFunctions = {
 
-    rainbow: function(time, index) {
-
-        const hue =
-            (time * 100 + index * 70) % 360;
-
-        return `hsl(${hue},100%,60%)`;
-    },
-
-    cyber: function(time, index) {
-
-        return index % 2 === 0
-            ? "#ff0055"
-            : "#00ffff";
-    },
-
-    lava: function(time, index) {
+    Rainbow: function(t, i, total) {
 
         return `hsl(
-            ${10 + index * 8},
+            ${(t * 100 + i * (360 / total)) % 360},
             100%,
             60%
         )`;
+
     },
 
-    ocean: function(time, index) {
+    Cyberpunk: function(t, i) {
+
+        return i % 2 === 0
+            ? "#ff0066"
+            : "#00f5ff";
+
+    },
+
+    Lava: function(t, i) {
 
         return `hsl(
-            ${180 + index * 15},
+            ${10 + i * 8},
+            100%,
+            ${55 + Math.sin(t * 2) * 8}%
+        )`;
+
+    },
+
+    Ocean: function(t, i) {
+
+        return `hsl(
+            ${180 + i * 18},
+            100%,
+            62%
+        )`;
+
+    },
+
+    Galaxy: function(t, i) {
+
+        return `hsl(
+            ${250 + Math.sin(t * 2 + i) * 45},
+            100%,
+            68%
+        )`;
+
+    },
+
+    Aurora: function(t, i) {
+
+        return `hsl(
+            ${120 + Math.sin(t + i) * 50},
+            100%,
+            65%
+        )`;
+
+    },
+
+    Ice: function(t, i) {
+
+        return `hsl(
+            ${185 + i * 12},
+            100%,
+            72%
+        )`;
+
+    },
+
+    Inferno: function(t, i) {
+
+        return `hsl(
+            ${5 + i * 12},
+            100%,
+            58%
+        )`;
+
+    },
+
+    Mystic: function(t, i) {
+
+        return `hsl(
+            ${285 + Math.sin(t + i) * 30},
+            100%,
+            68%
+        )`;
+
+    },
+
+    Toxic: function(t, i) {
+
+        return `hsl(
+            ${75 + i * 20},
             100%,
             60%
         )`;
-    },
 
-    galaxy: function(time, index) {
-
-        return `hsl(
-            ${260 + index * 20},
-            100%,
-            70%
-        )`;
     }
 
 };
 
 
-/* =====================================
+/* =========================================================
+   COLOR
+========================================================= */
+
+function getColor(
+    index = 0,
+    total = 5
+) {
+
+    return themeFunctions[currentTheme](
+        time,
+        index,
+        total
+    );
+
+}
+
+
+/* =========================================================
    RESIZE
-===================================== */
+========================================================= */
 
 function resize() {
 
@@ -488,11 +945,27 @@ function resize() {
     height =
         window.innerHeight;
 
-    canvas.width =
+    backgroundCanvas.width =
         width;
 
-    canvas.height =
+    backgroundCanvas.height =
         height;
+
+    effectCanvas.width =
+        width;
+
+    effectCanvas.height =
+        height;
+
+    const columns =
+        Math.ceil(width / 16);
+
+    matrixDrops =
+        Array.from(
+            { length: columns },
+            () => Math.random() * height / 16
+        );
+
 }
 
 window.addEventListener(
@@ -503,134 +976,9 @@ window.addEventListener(
 resize();
 
 
-/* =====================================
-   THEME BUTTONS
-===================================== */
-
-document
-.querySelectorAll(".theme")
-.forEach(button => {
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            document
-            .querySelectorAll(".theme")
-            .forEach(b =>
-                b.classList.remove("active")
-            );
-
-            button.classList.add("active");
-
-            currentTheme =
-                button.dataset.theme;
-        }
-    );
-
-});
-
-
-/* =====================================
-   START EXPERIENCE
-===================================== */
-
-startBtn.addEventListener(
-    "click",
-    async () => {
-
-        startBtn.disabled = true;
-
-        startBtn.textContent =
-            "STARTING...";
-
-        try {
-
-            /*
-             * CAMERA PERMISSION
-             */
-
-            const stream =
-                await navigator.mediaDevices
-                .getUserMedia({
-
-                    video: {
-                        facingMode: "user",
-                        width: {
-                            ideal: 1280
-                        },
-                        height: {
-                            ideal: 720
-                        }
-                    },
-
-                    audio: false
-                });
-
-
-            /*
-             * SHOW CAMERA
-             */
-
-            video.srcObject =
-                stream;
-
-            await video.play();
-
-
-            /*
-             * HIDE START SCREEN
-             */
-
-            startScreen.style.display =
-                "none";
-
-            hud.style.display =
-                "flex";
-
-            themes.style.display =
-                "flex";
-
-
-            /*
-             * START MEDIAPIPE
-             */
-
-            await startHandTracking();
-
-
-            /*
-             * START ANIMATION
-             */
-
-            requestAnimationFrame(
-                animationLoop
-            );
-
-        }
-
-        catch(error) {
-
-            console.error(error);
-
-            showError(
-                "Camera access failed. Please allow camera permission and reload the page."
-            );
-
-            startBtn.disabled =
-                false;
-
-            startBtn.textContent =
-                "ENTER EXPERIENCE";
-        }
-
-    }
-);
-
-
-/* =====================================
+/* =========================================================
    ERROR
-===================================== */
+========================================================= */
 
 function showError(message) {
 
@@ -639,14 +987,335 @@ function showError(message) {
 
     errorBox.style.display =
         "block";
+
 }
 
 
-/* =====================================
-   MEDIAPIPE
-===================================== */
+/* =========================================================
+   DISTANCE
+========================================================= */
 
-async function startHandTracking() {
+function distance(a, b) {
+
+    return Math.hypot(
+        a.x - b.x,
+        a.y - b.y
+    );
+
+}
+
+
+/* =========================================================
+   LANDMARK TO CANVAS
+========================================================= */
+
+function canvasPoint(point) {
+
+    return {
+
+        x: point.x * width,
+
+        y: point.y * height
+
+    };
+
+}
+
+
+/* =========================================================
+   THEME BUTTONS
+========================================================= */
+
+document
+.querySelectorAll(".themeButton")
+.forEach(button => {
+
+    button.addEventListener(
+        "click",
+        () => {
+
+            document
+            .querySelectorAll(".themeButton")
+            .forEach(b =>
+                b.classList.remove("active")
+            );
+
+            button.classList.add("active");
+
+            currentTheme =
+                button.dataset.theme;
+
+            document.documentElement
+            .style
+            .setProperty(
+                "--accent",
+                getColor(1, 2)
+            );
+
+        }
+    );
+
+});
+
+
+/* =========================================================
+   TRAIL BUTTON
+========================================================= */
+
+document
+.getElementById("trailButton")
+.addEventListener(
+    "click",
+    () => {
+
+        trailEnabled =
+            !trailEnabled;
+
+        document
+        .getElementById("trailButton")
+        .textContent =
+            `✨ Trails: ${
+                trailEnabled
+                ? "ON"
+                : "OFF"
+            }`;
+
+        if (!trailEnabled) {
+
+            trails = [];
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   PORTAL BUTTON
+========================================================= */
+
+document
+.getElementById("portalButton")
+.addEventListener(
+    "click",
+    () => {
+
+        portalEnabled =
+            !portalEnabled;
+
+        document
+        .getElementById("portalButton")
+        .textContent =
+            `🌀 Portal: ${
+                portalEnabled
+                ? "ON"
+                : "OFF"
+            }`;
+
+    }
+);
+
+
+/* =========================================================
+   SCREENSHOT
+========================================================= */
+
+document
+.getElementById("captureButton")
+.addEventListener(
+    "click",
+    captureImage
+);
+
+
+function captureImage() {
+
+    const output =
+        document.createElement("canvas");
+
+    output.width =
+        width;
+
+    output.height =
+        height;
+
+    const outputContext =
+        output.getContext("2d");
+
+    /*
+       Mirror camera into screenshot
+    */
+
+    outputContext.save();
+
+    outputContext.translate(
+        width,
+        0
+    );
+
+    outputContext.scale(
+        -1,
+        1
+    );
+
+    outputContext.drawImage(
+        video,
+        0,
+        0,
+        width,
+        height
+    );
+
+    outputContext.restore();
+
+    /*
+       Add effects
+    */
+
+    outputContext.drawImage(
+        backgroundCanvas,
+        0,
+        0
+    );
+
+    outputContext.drawImage(
+        effectCanvas,
+        0,
+        0
+    );
+
+    const link =
+        document.createElement("a");
+
+    link.download =
+        "neon-aura-ar.png";
+
+    link.href =
+        output.toDataURL(
+            "image/png"
+        );
+
+    link.click();
+
+}
+
+
+/* =========================================================
+   START
+========================================================= */
+
+startButton.addEventListener(
+    "click",
+    startExperience
+);
+
+
+async function startExperience() {
+
+    try {
+
+        startButton.textContent =
+            "REQUESTING CAMERA...";
+
+        /*
+           GitHub Pages runs on HTTPS,
+           so camera access is allowed.
+        */
+
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+
+            throw new Error(
+                "Camera API unavailable."
+            );
+
+        }
+
+
+        cameraStream =
+            await navigator.mediaDevices
+            .getUserMedia({
+
+                video: {
+
+                    facingMode: "user",
+
+                    width: {
+                        ideal: 1280
+                    },
+
+                    height: {
+                        ideal: 720
+                    }
+
+                },
+
+                audio: false
+
+            });
+
+
+        video.srcObject =
+            cameraStream;
+
+        await video.play();
+
+
+        /*
+           Initialize MediaPipe
+        */
+
+        await initializeMediaPipe();
+
+
+        startScreen
+        .classList
+        .add("hidden");
+
+        hud.style.display =
+            "flex";
+
+        controls.style.display =
+            "flex";
+
+        themes.style.display =
+            "flex";
+
+        status.style.display =
+            "block";
+
+        status.textContent =
+            "Show your hand 🖐️";
+
+
+        requestAnimationFrame(
+            renderLoop
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        startButton.textContent =
+            "TRY AGAIN";
+
+        showError(
+            "Camera could not start. Please allow camera permission and reload the GitHub Pages website."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   MEDIAPIPE
+========================================================= */
+
+async function initializeMediaPipe() {
 
     if (
         typeof Hands ===
@@ -654,8 +1323,9 @@ async function startHandTracking() {
     ) {
 
         throw new Error(
-            "MediaPipe Hands failed to load."
+            "MediaPipe failed to load."
         );
+
     }
 
 
@@ -666,9 +1336,11 @@ async function startHandTracking() {
                 function(file) {
 
                     return (
-                        "https://cdn.jsdelivr.net/npm/@mediapipe/hands/"
-                        + file
+                        "https://cdn.jsdelivr.net/npm/" +
+                        "@mediapipe/hands/" +
+                        file
                     );
+
                 }
 
         });
@@ -680,23 +1352,23 @@ async function startHandTracking() {
 
         modelComplexity: 1,
 
-        minDetectionConfidence: 0.6,
+        minDetectionConfidence: 0.65,
 
-        minTrackingConfidence: 0.6
+        minTrackingConfidence: 0.65
 
     });
 
 
     hands.onResults(
-        handleResults
+        processResults
     );
 
 
     /*
-     * PROCESS CAMERA FRAMES
-     */
+       Camera loop
+    */
 
-    async function processFrame() {
+    async function sendFrame() {
 
         if (
             video.readyState >= 2
@@ -708,190 +1380,376 @@ async function startHandTracking() {
                     image: video
                 });
 
-            }
+            } catch(error) {
 
-            catch(error) {
-
-                console.error(
-                    "MediaPipe error:",
+                console.warn(
+                    "MediaPipe frame error:",
                     error
                 );
+
             }
+
         }
 
         requestAnimationFrame(
-            processFrame
+            sendFrame
         );
+
     }
 
+    sendFrame();
 
-    processFrame();
 }
 
 
-/* =====================================
-   MEDIAPIPE RESULTS
-===================================== */
+/* =========================================================
+   RESULTS
+========================================================= */
 
-function handleResults(results) {
+function processResults(
+    results
+) {
 
-    detectedHands =
-        results.multiHandLandmarks || [];
-
-
-    handsUI.textContent =
-        detectedHands.length;
+    const detected =
+        results.multiHandLandmarks ||
+        [];
 
 
     /*
-     * GESTURE
-     */
+       Calculate movement
+    */
+
+    let movement = 0;
+
 
     if (
-        detectedHands.length > 0
+        previousHands.length > 0 &&
+        detected.length > 0
     ) {
 
-        detectGesture(
-            detectedHands[0]
+        movement =
+            distance(
+                previousHands[0][8],
+                detected[0][8]
+            );
+
+    }
+
+
+    previousHands =
+        detected.map(
+            hand =>
+                hand.map(
+                    point => ({
+                        x: point.x,
+                        y: point.y,
+                        z: point.z
+                    })
+                )
         );
 
-    }
-    else {
 
-        gestureUI.textContent =
+    currentHands =
+        detected;
+
+
+    handsValue.textContent =
+        currentHands.length;
+
+
+    /*
+       Power calculation
+    */
+
+    const movementPower =
+        Math.min(
+            1,
+            movement * 18
+        );
+
+
+    let proximityPower = 0;
+
+
+    if (
+        currentHands.length >= 2
+    ) {
+
+        proximityPower =
+            1 -
+            Math.min(
+                1,
+                distance(
+                    currentHands[0][8],
+                    currentHands[1][8]
+                ) * 2
+            );
+
+    }
+
+
+    const targetPower =
+        Math.min(
+            100,
+            currentHands.length * 25 +
+            movementPower * 45 +
+            proximityPower * 30
+        );
+
+
+    power +=
+        (
+            targetPower -
+            power
+        ) * 0.12;
+
+
+    powerValue.textContent =
+        Math.round(power) +
+        "%";
+
+    powerBar.style.width =
+        power + "%";
+
+
+    detectGestures();
+
+}
+
+
+/* =========================================================
+   GESTURES
+========================================================= */
+
+function detectGestures() {
+
+    if (
+        currentHands.length === 0
+    ) {
+
+        gestureValue.textContent =
             "None";
 
-        spreadUI.textContent =
+        spreadValue.textContent =
             "0%";
+
+        return;
+
     }
 
-}
+
+    const hand =
+        currentHands[0];
 
 
-/* =====================================
-   DISTANCE
-===================================== */
-
-function distance(a,b) {
-
-    return Math.sqrt(
-
-        Math.pow(
-            a.x - b.x,
-            2
-        )
-
-        +
-
-        Math.pow(
-            a.y - b.y,
-            2
-        )
-
-    );
-
-}
-
-
-/* =====================================
-   GESTURE DETECTION
-===================================== */
-
-function detectGesture(hand) {
-
-    const thumb =
-        hand[4];
-
-    const index =
-        hand[8];
+    /*
+       PINCH
+    */
 
     const pinchDistance =
         distance(
-            thumb,
-            index
+            hand[4],
+            hand[8]
         );
 
 
+    const pinch =
+        pinchDistance < 0.055;
+
+
     /*
-     * PINCH
-     */
+       SPREAD
+    */
 
-    if (
-        pinchDistance < 0.06
-    ) {
-
-        gestureUI.textContent =
-            "PINCH";
-
-        const x =
-            ((thumb.x + index.x) / 2)
-            * width;
-
-        const y =
-            ((thumb.y + index.y) / 2)
-            * height;
+    const spread =
+        Math.min(
+            100,
+            Math.round(
+                distance(
+                    hand[8],
+                    hand[20]
+                ) * 300
+            )
+        );
 
 
-        if (
-            !previousPinch[0]
-        ) {
+    spreadValue.textContent =
+        spread + "%";
+
+
+    if (pinch) {
+
+        gestureValue.textContent =
+            "PINCH ⚡";
+
+
+        if (!lastPinch[0]) {
+
+            const middle = {
+
+                x:
+                    (
+                        hand[4].x +
+                        hand[8].x
+                    ) / 2,
+
+                y:
+                    (
+                        hand[4].y +
+                        hand[8].y
+                    ) / 2
+
+            };
+
+
+            const point =
+                canvasPoint(
+                    middle
+                );
+
+
+            createBurst(
+                point.x,
+                point.y,
+                35
+            );
+
 
             createRipple(
-                x,
-                y
+                point.x,
+                point.y,
+                20,
+                260
             );
+
         }
 
-        previousPinch[0] =
+
+        lastPinch[0] =
             true;
+
+
+        return;
+
+    }
+
+
+    lastPinch[0] =
+        false;
+
+
+    /*
+       INDEX FINGER
+    */
+
+    const indexUp =
+        hand[8].y <
+        hand[6].y;
+
+
+    const middleDown =
+        hand[12].y >
+        hand[10].y;
+
+
+    /*
+       PEACE
+    */
+
+    if (
+        indexUp &&
+        !middleDown
+    ) {
+
+        gestureValue.textContent =
+            "PEACE ✌️";
+
+    }
+
+    else if (
+        spread > 55
+    ) {
+
+        gestureValue.textContent =
+            "OPEN HAND 🖐️";
 
     }
 
     else {
 
-        previousPinch[0] =
-            false;
+        gestureValue.textContent =
+            "FIST ✊";
 
-
-        /*
-         * OPEN HAND / FIST
-         */
-
-        const spread =
-            distance(
-                hand[8],
-                hand[20]
-            );
-
-        const percentage =
-            Math.min(
-                100,
-                Math.round(
-                    spread * 300
-                )
-            );
-
-
-        spreadUI.textContent =
-            percentage + "%";
-
-
-        gestureUI.textContent =
-            percentage > 50
-            ? "OPEN HAND"
-            : "FIST";
     }
 
 }
 
 
-/* =====================================
+/* =========================================================
+   PARTICLE BURST
+========================================================= */
+
+function createBurst(
+    x,
+    y,
+    amount = 20
+) {
+
+    for (
+        let i = 0;
+        i < amount;
+        i++
+    ) {
+
+        const angle =
+            Math.random() *
+            Math.PI * 2;
+
+        const speed =
+            Math.random() * 8 + 2;
+
+
+        particles.push({
+
+            x: x,
+
+            y: y,
+
+            vx:
+                Math.cos(angle) *
+                speed,
+
+            vy:
+                Math.sin(angle) *
+                speed,
+
+            life: 1,
+
+            size:
+                Math.random() * 4 + 1,
+
+            color:
+                getColor(
+                    i,
+                    6
+                )
+
+        });
+
+    }
+
+}
+
+
+/* =========================================================
    RIPPLE
-===================================== */
+========================================================= */
 
 function createRipple(
     x,
-    y
+    y,
+    radius,
+    maximum
 ) {
 
     ripples.push({
@@ -900,69 +1758,183 @@ function createRipple(
 
         y: y,
 
-        radius: 10,
+        radius: radius,
 
-        life: 1
-
-    });
-
-}
-
-
-/* =====================================
-   PARTICLES
-===================================== */
-
-function createParticle(
-    x,
-    y,
-    color
-) {
-
-    particles.push({
-
-        x: x,
-
-        y: y,
-
-        vx:
-            (Math.random() - 0.5)
-            * 5,
-
-        vy:
-            (Math.random() - 0.5)
-            * 5,
+        maxRadius: maximum,
 
         life: 1,
 
-        color: color,
+        color:
+            getColor(1,3)
 
-        size:
-            Math.random() * 3 + 1
     });
 
 }
 
 
-/* =====================================
-   DRAW HAND
-===================================== */
+/* =========================================================
+   MATRIX BACKGROUND
+========================================================= */
+
+function drawMatrix() {
+
+    bg.fillStyle =
+        "rgba(2,3,12,0.24)";
+
+    bg.fillRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    bg.font =
+        "16px monospace";
+
+
+    for (
+        let i = 0;
+        i < matrixDrops.length;
+        i++
+    ) {
+
+        if (
+            Math.random() <
+            0.055
+        ) {
+
+            bg.fillStyle =
+                getColor(
+                    i,
+                    10
+                );
+
+            bg.globalAlpha =
+                0.25;
+
+
+            const character =
+                String.fromCharCode(
+                    0x30A0 +
+                    Math.random() * 96
+                );
+
+
+            bg.fillText(
+                character,
+                i * 16,
+                matrixDrops[i] * 16
+            );
+
+        }
+
+
+        matrixDrops[i] +=
+            1 +
+            power / 70;
+
+
+        if (
+            matrixDrops[i] * 16 >
+            height + 30
+        ) {
+
+            matrixDrops[i] =
+                0;
+
+        }
+
+    }
+
+
+    bg.globalAlpha =
+        1;
+
+}
+
+
+/* =========================================================
+   HAND AURA
+========================================================= */
+
+function drawHandAura(
+    hand,
+    index
+) {
+
+    const palm =
+        canvasPoint(
+            hand[0]
+        );
+
+
+    const color =
+        getColor(
+            index,
+            5
+        );
+
+
+    const radius =
+        70 +
+        power * 0.9;
+
+
+    const gradient =
+        ctx.createRadialGradient(
+            palm.x,
+            palm.y,
+            5,
+            palm.x,
+            palm.y,
+            radius
+        );
+
+
+    gradient.addColorStop(
+        0,
+        "#ffffff66"
+    );
+
+    gradient.addColorStop(
+        0.25,
+        color + "55"
+    );
+
+    gradient.addColorStop(
+        1,
+        "#00000000"
+    );
+
+
+    ctx.fillStyle =
+        gradient;
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        palm.x,
+        palm.y,
+        radius,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+}
+
+
+/* =========================================================
+   HAND SKELETON
+========================================================= */
 
 function drawHand(
     hand,
     handIndex
 ) {
-
-    const color =
-        colors[currentTheme](
-            animationTime,
-            handIndex
-        );
-
-
-    /*
-     * CONNECTIONS
-     */
 
     const connections = [
 
@@ -996,56 +1968,57 @@ function drawHand(
     ];
 
 
-    /*
-     * NEON LINES
-     */
+    const handColor =
+        getColor(
+            handIndex,
+            Math.max(
+                2,
+                currentHands.length
+            )
+        );
 
-    ctx.shadowBlur =
-        20;
-
-    ctx.shadowColor =
-        color;
 
     ctx.strokeStyle =
-        color;
+        handColor;
 
     ctx.lineWidth =
-        3;
+        2.5;
+
+    ctx.shadowBlur =
+        18;
+
+    ctx.shadowColor =
+        handColor;
 
 
     connections.forEach(
-        pair => {
+        connection => {
 
             const a =
-                hand[pair[0]];
+                canvasPoint(
+                    hand[
+                        connection[0]
+                    ]
+                );
 
             const b =
-                hand[pair[1]];
-
-
-            const ax =
-                a.x * width;
-
-            const ay =
-                a.y * height;
-
-            const bx =
-                b.x * width;
-
-            const by =
-                b.y * height;
+                canvasPoint(
+                    hand[
+                        connection[1]
+                    ]
+                );
 
 
             ctx.beginPath();
 
             ctx.moveTo(
-                ax,
-                ay
+                a.x,
+                a.y
             );
 
             ctx.lineTo(
-                bx,
-                by
+                b.x,
+                b.y
             );
 
             ctx.stroke();
@@ -1054,44 +2027,52 @@ function drawHand(
     );
 
 
-    /*
-     * LANDMARKS
-     */
+    ctx.shadowBlur =
+        0;
 
-    fingertips.forEach(
-        (index, i) => {
+
+    /*
+       FINGERTIPS
+    */
+
+    FINGER_TIPS.forEach(
+        (
+            tipIndex,
+            fingerIndex
+        ) => {
 
             const point =
-                hand[index];
+                canvasPoint(
+                    hand[
+                        tipIndex
+                    ]
+                );
 
-            const x =
-                point.x * width;
-
-            const y =
-                point.y * height;
 
             const tipColor =
-                colors[currentTheme](
-                    animationTime,
-                    i
+                getColor(
+                    fingerIndex,
+                    5
                 );
 
 
             ctx.beginPath();
 
             ctx.arc(
-                x,
-                y,
-                7,
+                point.x,
+                point.y,
+                5 +
+                power * 0.025,
                 0,
                 Math.PI * 2
             );
+
 
             ctx.fillStyle =
                 "#ffffff";
 
             ctx.shadowBlur =
-                30;
+                25;
 
             ctx.shadowColor =
                 tipColor;
@@ -1099,202 +2080,602 @@ function drawHand(
             ctx.fill();
 
 
-            /*
-             * PARTICLES
-             */
-
-            if (
-                Math.random() > 0.5
-            ) {
-
-                createParticle(
-                    x,
-                    y,
-                    tipColor
-                );
-
-            }
-
-        }
-    );
-
-
-    ctx.shadowBlur =
-        0;
-
-}
-
-
-/* =====================================
-   TWO HAND CONNECTION
-===================================== */
-
-function drawTwoHands() {
-
-    if (
-        detectedHands.length < 2
-    ) {
-        return;
-    }
-
-
-    const hand1 =
-        detectedHands[0];
-
-    const hand2 =
-        detectedHands[1];
-
-
-    fingertips.forEach(
-        (tip, index) => {
-
-            const p1 =
-                hand1[tip];
-
-            const p2 =
-                hand2[tip];
-
-
-            const x1 =
-                p1.x * width;
-
-            const y1 =
-                p1.y * height;
-
-            const x2 =
-                p2.x * width;
-
-            const y2 =
-                p2.y * height;
-
-
-            const color =
-                colors[currentTheme](
-                    animationTime,
-                    index
-                );
-
-
-            /*
-             * CONNECTION
-             */
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-                x1,
-                y1
-            );
-
-            ctx.lineTo(
-                x2,
-                y2
-            );
-
-            ctx.strokeStyle =
-                color;
-
-            ctx.lineWidth =
-                4;
-
             ctx.shadowBlur =
-                25;
-
-            ctx.shadowColor =
-                color;
-
-            ctx.stroke();
+                0;
 
 
             /*
-             * LIGHTNING
-             */
+               TRAIL
+            */
+
+            if (trailEnabled) {
+
+                trails.push({
+
+                    x: point.x,
+
+                    y: point.y,
+
+                    life: 1,
+
+                    color:
+                        tipColor
+
+                });
+
+
+                if (
+                    trails.length >
+                    1000
+                ) {
+
+                    trails.splice(
+                        0,
+                        100
+                    );
+
+                }
+
+            }
+
+
+            /*
+               Tiny sparks
+            */
 
             if (
-                distance(
-                    p1,
-                    p2
-                ) < 0.25
+                Math.random() <
+                0.35
             ) {
 
-                const midX =
-                    (x1 + x2) / 2
-                    +
-                    (Math.random()-0.5)
-                    * 40;
-
-                const midY =
-                    (y1 + y2) / 2
-                    +
-                    (Math.random()-0.5)
-                    * 40;
-
-
-                ctx.beginPath();
-
-                ctx.moveTo(
-                    x1,
-                    y1
+                createBurst(
+                    point.x,
+                    point.y,
+                    1
                 );
-
-                ctx.lineTo(
-                    midX,
-                    midY
-                );
-
-                ctx.lineTo(
-                    x2,
-                    y2
-                );
-
-                ctx.strokeStyle =
-                    "#ffffff";
-
-                ctx.lineWidth =
-                    2;
-
-                ctx.stroke();
 
             }
 
         }
     );
 
-
-    ctx.shadowBlur =
-        0;
-
 }
 
 
-/* =====================================
-   PARTICLE UPDATE
-===================================== */
+/* =========================================================
+   FINGERTIP TRAILS
+========================================================= */
 
-function updateParticles() {
+function drawTrails() {
 
     for (
-        let i = particles.length - 1;
+        let i =
+            trails.length - 1;
         i >= 0;
         i--
     ) {
 
-        const p =
-            particles[i];
+        const trail =
+            trails[i];
 
 
-        p.x +=
-            p.vx;
-
-        p.y +=
-            p.vy;
-
-        p.life -=
+        trail.life -=
             0.025;
 
 
         if (
-            p.life <= 0
+            trail.life <= 0
+        ) {
+
+            trails.splice(
+                i,
+                1
+            );
+
+            continue;
+
+        }
+
+
+        ctx.globalAlpha =
+            trail.life * 0.45;
+
+
+        ctx.fillStyle =
+            trail.color;
+
+
+        ctx.shadowBlur =
+            12;
+
+        ctx.shadowColor =
+            trail.color;
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            trail.x,
+            trail.y,
+            2.5,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+    }
+
+
+    ctx.globalAlpha =
+        1;
+
+    ctx.shadowBlur =
+        0;
+
+}
+
+
+/* =========================================================
+   PORTAL
+========================================================= */
+
+function drawPortal() {
+
+    if (
+        !portalEnabled ||
+        currentHands.length < 2
+    ) {
+
+        return;
+
+    }
+
+
+    const hand1 =
+        canvasPoint(
+            currentHands[0][0]
+        );
+
+    const hand2 =
+        canvasPoint(
+            currentHands[1][0]
+        );
+
+
+    const centerX =
+        (
+            hand1.x +
+            hand2.x
+        ) / 2;
+
+
+    const centerY =
+        (
+            hand1.y +
+            hand2.y
+        ) / 2;
+
+
+    const handDistance =
+        Math.hypot(
+            hand1.x -
+            hand2.x,
+
+            hand1.y -
+            hand2.y
+        );
+
+
+    const radius =
+        Math.max(
+            30,
+            Math.min(
+                230,
+                handDistance * 0.42
+            )
+        );
+
+
+    ctx.save();
+
+
+    ctx.translate(
+        centerX,
+        centerY
+    );
+
+
+    ctx.rotate(
+        time * 0.8
+    );
+
+
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
+
+        ctx.beginPath();
+
+        ctx.arc(
+            0,
+            0,
+            radius +
+            i * 12,
+            0,
+            Math.PI * 2
+        );
+
+
+        ctx.strokeStyle =
+            getColor(
+                i,
+                5
+            );
+
+        ctx.lineWidth =
+            3;
+
+
+        ctx.globalAlpha =
+            0.75 -
+            i * 0.1;
+
+
+        ctx.shadowBlur =
+            25;
+
+        ctx.shadowColor =
+            ctx.strokeStyle;
+
+
+        ctx.stroke();
+
+    }
+
+
+    ctx.restore();
+
+
+    ctx.globalAlpha =
+        1;
+
+    ctx.shadowBlur =
+        0;
+
+
+    /*
+       PORTAL SPARKS
+    */
+
+    if (
+        handDistance < 300 &&
+        Math.random() < 0.5
+    ) {
+
+        for (
+            let i = 0;
+            i < 6;
+            i++
+        ) {
+
+            createPortalSpark(
+                hand1,
+                hand2
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   PORTAL SPARK
+========================================================= */
+
+function createPortalSpark(
+    a,
+    b
+) {
+
+    const t =
+        Math.random();
+
+
+    const x =
+        a.x +
+        (
+            b.x -
+            a.x
+        ) * t;
+
+
+    const y =
+        a.y +
+        (
+            b.y -
+            a.y
+        ) * t;
+
+
+    sparks.push({
+
+        x: x,
+
+        y: y,
+
+        vx:
+            (Math.random() - 0.5) *
+            6,
+
+        vy:
+            (Math.random() - 0.5) *
+            6,
+
+        life: 1,
+
+        color:
+            getColor(
+                Math.floor(
+                    Math.random() * 6
+                ),
+                8
+            )
+
+    });
+
+}
+
+
+/* =========================================================
+   DRAW SPARKS
+========================================================= */
+
+function drawSparks() {
+
+    for (
+        let i =
+            sparks.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const spark =
+            sparks[i];
+
+
+        spark.x +=
+            spark.vx;
+
+        spark.y +=
+            spark.vy;
+
+
+        spark.life -=
+            0.06;
+
+
+        if (
+            spark.life <= 0
+        ) {
+
+            sparks.splice(
+                i,
+                1
+            );
+
+            continue;
+
+        }
+
+
+        ctx.globalAlpha =
+            spark.life;
+
+
+        ctx.fillStyle =
+            spark.color;
+
+
+        ctx.shadowBlur =
+            18;
+
+        ctx.shadowColor =
+            spark.color;
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            spark.x,
+            spark.y,
+            2.5,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+    }
+
+
+    ctx.globalAlpha =
+        1;
+
+    ctx.shadowBlur =
+        0;
+
+}
+
+
+/* =========================================================
+   MANDALA
+========================================================= */
+
+function drawMandala() {
+
+    if (
+        currentHands.length <
+        2
+    ) {
+
+        return;
+
+    }
+
+
+    const points = [];
+
+
+    currentHands.forEach(
+        hand => {
+
+            FINGER_TIPS.forEach(
+                tip => {
+
+                    points.push(
+                        canvasPoint(
+                            hand[tip]
+                        )
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    let centerX = 0;
+    let centerY = 0;
+
+
+    points.forEach(
+        point => {
+
+            centerX +=
+                point.x;
+
+            centerY +=
+                point.y;
+
+        }
+    );
+
+
+    centerX /=
+        points.length;
+
+    centerY /=
+        points.length;
+
+
+    ctx.save();
+
+
+    ctx.translate(
+        centerX,
+        centerY
+    );
+
+
+    ctx.rotate(
+        time * 0.4
+    );
+
+
+    ctx.strokeStyle =
+        "rgba(255,255,255,0.22)";
+
+    ctx.lineWidth =
+        1;
+
+
+    for (
+        let i = 0;
+        i < points.length;
+        i++
+    ) {
+
+        const a =
+            points[i];
+
+        const b =
+            points[
+                (i + 3) %
+                points.length
+            ];
+
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            a.x - centerX,
+            a.y - centerY
+        );
+
+        ctx.lineTo(
+            b.x - centerX,
+            b.y - centerY
+        );
+
+        ctx.stroke();
+
+    }
+
+
+    ctx.restore();
+
+}
+
+
+/* =========================================================
+   PHYSICS
+========================================================= */
+
+function updatePhysics() {
+
+    /*
+       PARTICLES
+    */
+
+    for (
+        let i =
+            particles.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const particle =
+            particles[i];
+
+
+        particle.x +=
+            particle.vx;
+
+        particle.y +=
+            particle.vy;
+
+
+        particle.vx *=
+            0.985;
+
+        particle.vy =
+            particle.vy *
+            0.985 +
+            0.08;
+
+
+        particle.life -=
+            0.025;
+
+
+        if (
+            particle.life <= 0
         ) {
 
             particles.splice(
@@ -1303,43 +2684,47 @@ function updateParticles() {
             );
 
             continue;
+
         }
 
 
         ctx.globalAlpha =
-            p.life;
+            particle.life;
+
+
+        ctx.fillStyle =
+            particle.color;
+
+
+        ctx.shadowBlur =
+            14;
+
+        ctx.shadowColor =
+            particle.color;
+
 
         ctx.beginPath();
 
         ctx.arc(
-            p.x,
-            p.y,
-            p.size,
+            particle.x,
+            particle.y,
+            particle.size,
             0,
             Math.PI * 2
         );
-
-        ctx.fillStyle =
-            p.color;
 
         ctx.fill();
 
     }
 
-    ctx.globalAlpha =
-        1;
 
-}
-
-
-/* =====================================
-   RIPPLE UPDATE
-===================================== */
-
-function updateRipples() {
+    /*
+       RIPPLES
+    */
 
     for (
-        let i = ripples.length - 1;
+        let i =
+            ripples.length - 1;
         i >= 0;
         i--
     ) {
@@ -1349,7 +2734,11 @@ function updateRipples() {
 
 
         ripple.radius +=
-            8;
+            (
+                ripple.maxRadius -
+                ripple.radius
+            ) * 0.09;
+
 
         ripple.life -=
             0.025;
@@ -1365,7 +2754,28 @@ function updateRipples() {
             );
 
             continue;
+
         }
+
+
+        ctx.globalAlpha =
+            ripple.life;
+
+
+        ctx.strokeStyle =
+            ripple.color;
+
+
+        ctx.lineWidth =
+            5 *
+            ripple.life;
+
+
+        ctx.shadowBlur =
+            25;
+
+        ctx.shadowColor =
+            ripple.color;
 
 
         ctx.beginPath();
@@ -1378,64 +2788,60 @@ function updateRipples() {
             Math.PI * 2
         );
 
-        ctx.strokeStyle =
-            colors[currentTheme](
-                animationTime,
-                1
-            );
-
-        ctx.lineWidth =
-            5 *
-            ripple.life;
-
-        ctx.globalAlpha =
-            ripple.life;
-
-        ctx.shadowBlur =
-            25;
-
-        ctx.shadowColor =
-            ctx.strokeStyle;
-
         ctx.stroke();
 
-        ctx.shadowBlur =
-            0;
-
     }
+
 
     ctx.globalAlpha =
         1;
 
+    ctx.shadowBlur =
+        0;
+
 }
 
 
-/* =====================================
-   ANIMATION
-===================================== */
+/* =========================================================
+   MAIN RENDER LOOP
+========================================================= */
 
-function animationLoop(timestamp) {
+function renderLoop(
+    timestamp
+) {
 
-    animationTime +=
-        0.016;
+    const delta =
+        (
+            timestamp -
+            lastFrame
+        ) / 1000;
+
+
+    lastFrame =
+        timestamp;
+
+
+    time +=
+        delta;
 
 
     /*
-     * FPS
-     */
+       FPS
+    */
 
-    frameCount++;
+    fpsFrames++;
 
 
     if (
-        timestamp - fpsTimer
-        >= 1000
+        timestamp -
+        fpsTimer >=
+        1000
     ) {
 
-        fpsUI.textContent =
-            frameCount;
+        fpsValue.textContent =
+            fpsFrames;
 
-        frameCount =
+        fpsFrames =
             0;
 
         fpsTimer =
@@ -1445,8 +2851,8 @@ function animationLoop(timestamp) {
 
 
     /*
-     * CLEAR
-     */
+       Clear effect canvas
+    */
 
     ctx.clearRect(
         0,
@@ -1457,56 +2863,136 @@ function animationLoop(timestamp) {
 
 
     /*
-     * DRAW HANDS
-     */
+       Background
+    */
 
-    detectedHands.forEach(
-        drawHand
+    drawMatrix();
+
+
+    /*
+       Trails
+    */
+
+    drawTrails();
+
+
+    /*
+       Hand aura
+    */
+
+    currentHands.forEach(
+        (
+            hand,
+            index
+        ) => {
+
+            drawHandAura(
+                hand,
+                index
+            );
+
+        }
     );
 
 
     /*
-     * TWO HAND EFFECT
-     */
+       Skeleton
+    */
 
-    drawTwoHands();
+    currentHands.forEach(
+        (
+            hand,
+            index
+        ) => {
+
+            drawHand(
+                hand,
+                index
+            );
+
+        }
+    );
 
 
     /*
-     * PARTICLES
-     */
+       Portal
+    */
 
-    updateParticles();
+    drawPortal();
 
 
     /*
-     * RIPPLES
-     */
+       Mandala
+    */
 
-    updateRipples();
+    drawMandala();
+
+
+    /*
+       Sparks
+    */
+
+    drawSparks();
+
+
+    /*
+       Physics
+    */
+
+    updatePhysics();
+
+
+    /*
+       Status
+    */
+
+    if (
+        currentHands.length === 0
+    ) {
+
+        status.textContent =
+            "Show your hand 🖐️";
+
+    } else {
+
+        status.textContent =
+            `POWER ${
+                Math.round(power)
+            }% • ${
+                gestureValue.textContent
+            }`;
+
+    }
 
 
     requestAnimationFrame(
-        animationLoop
+        renderLoop
     );
 
 }
 
 
-/* =====================================
-   CAMERA SUPPORT CHECK
-===================================== */
+/* =========================================================
+   CLEANUP
+========================================================= */
 
-if (
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-) {
+window.addEventListener(
+    "beforeunload",
+    () => {
 
-    showError(
-        "Your browser does not support camera access. Please use Chrome or Edge."
-    );
+        if (cameraStream) {
 
-}
+            cameraStream
+            .getTracks()
+            .forEach(
+                track =>
+                    track.stop()
+            );
+
+        }
+
+    }
+);
 
 </script>
 
