@@ -4,18 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Neon Aura AR - Advanced Hand Tracking</title>
+<title>Neon Aura AR - Hand Tracking</title>
 
 <!-- MediaPipe -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 
 <style>
+
 :root {
-    --bg: #03030b;
     --accent: #00ffcc;
-    --glass: rgba(10, 15, 30, 0.55);
+    --bg: #050510;
+    --glass: rgba(10,15,30,0.55);
     --border: rgba(255,255,255,0.18);
 }
 
@@ -30,138 +32,307 @@ body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: var(--bg);
-    color: white;
-    font-family:
-        Inter,
-        Arial,
-        Helvetica,
-        sans-serif;
+    background: #000;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
-/* CAMERA */
+/* =========================================================
+   CAMERA
+========================================================= */
 
 #video {
     position: fixed;
-    inset: 0;
 
-    width: 100%;
-    height: 100%;
+    top: 0;
+    left: 0;
+
+    width: 100vw;
+    height: 100vh;
 
     object-fit: cover;
 
-    transform: scaleX(-1);
+    display: block;
 
-    z-index: 0;
+    background: #000;
+
+    /*
+       IMPORTANT:
+       Camera must remain BELOW the canvases.
+    */
+    z-index: 1;
+
+    transform: scaleX(-1);
 
     filter:
-        brightness(0.58)
-        contrast(1.12)
-        saturate(1.1);
+        brightness(0.78)
+        contrast(1.05)
+        saturate(1.05);
 }
 
-/* CANVAS */
-
-#backgroundCanvas,
-#effectCanvas {
-    position: fixed;
-    inset: 0;
-
-    width: 100%;
-    height: 100%;
-
-    transform: scaleX(-1);
-
-    pointer-events: none;
-}
+/* =========================================================
+   BACKGROUND EFFECT
+========================================================= */
 
 #backgroundCanvas {
-    z-index: 1;
+
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    z-index: 2;
+
+    pointer-events: none;
+
+    transform: scaleX(-1);
 }
+
+/* =========================================================
+   MAIN EFFECT CANVAS
+========================================================= */
 
 #effectCanvas {
-    z-index: 2;
+
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    z-index: 3;
+
+    pointer-events: none;
+
+    transform: scaleX(-1);
 }
 
-/* START SCREEN */
+/* =========================================================
+   HUD
+========================================================= */
 
-#startScreen {
+#hud {
+
     position: fixed;
+
+    top: 20px;
+    left: 20px;
+
+    z-index: 20;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+    transition: 0.4s;
+}
+
+.panel {
+
+    min-width: 220px;
+
+    padding: 16px 20px;
+
+    border-radius: 16px;
+
+    background: var(--glass);
+
+    border: 1px solid var(--border);
+
+    backdrop-filter: blur(15px);
+
+    -webkit-backdrop-filter: blur(15px);
+
+    box-shadow:
+        0 10px 40px rgba(0,0,0,0.5),
+        0 0 20px rgba(0,255,204,0.05);
+
+}
+
+.stat {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 30px;
+
+    margin-bottom: 8px;
+
+    color: rgba(255,255,255,0.85);
+
+    font-size: 14px;
+}
+
+.stat:last-child {
+    margin-bottom: 0;
+}
+
+.value {
+
+    color: var(--accent);
+
+    font-weight: bold;
+
+    text-shadow:
+        0 0 8px var(--accent);
+}
+
+/* =========================================================
+   THEME BAR
+========================================================= */
+
+#themes {
+
+    position: fixed;
+
+    bottom: 25px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 20;
+
+    display: flex;
+
+    gap: 7px;
+
+    padding: 8px;
+
+    border-radius: 40px;
+
+    background: rgba(5,10,20,0.65);
+
+    border: 1px solid var(--border);
+
+    backdrop-filter: blur(15px);
+
+    -webkit-backdrop-filter: blur(15px);
+
+    white-space: nowrap;
+}
+
+.theme-btn {
+
+    border: 1px solid transparent;
+
+    background: transparent;
+
+    color: white;
+
+    padding: 9px 15px;
+
+    border-radius: 25px;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+
+    font-size: 13px;
+
+}
+
+.theme-btn:hover {
+
+    background: rgba(255,255,255,0.12);
+
+}
+
+.theme-btn.active {
+
+    background: rgba(255,255,255,0.18);
+
+    border-color: rgba(255,255,255,0.3);
+
+    box-shadow:
+        0 0 15px rgba(255,255,255,0.12);
+
+}
+
+/* =========================================================
+   START SCREEN
+========================================================= */
+
+#startOverlay {
+
+    position: fixed;
+
     inset: 0;
 
     z-index: 100;
 
     display: flex;
+
     flex-direction: column;
 
-    align-items: center;
     justify-content: center;
+
+    align-items: center;
 
     text-align: center;
 
     background:
         radial-gradient(
             circle at center,
-            #15153c 0%,
-            #070711 45%,
-            #010105 100%
+            rgba(30,0,80,0.4),
+            rgba(0,0,0,0.97)
         );
 
     backdrop-filter: blur(12px);
 
-    transition:
-        opacity 0.5s ease,
-        visibility 0.5s ease;
+    transition: opacity 0.6s;
 }
 
-#startScreen.hidden {
+#startOverlay.hidden {
+
     opacity: 0;
-    visibility: hidden;
+
     pointer-events: none;
 }
 
-#startScreen h1 {
-    font-size: clamp(35px, 7vw, 80px);
+.title {
+
+    font-size: clamp(30px, 6vw, 70px);
+
+    letter-spacing: 8px;
 
     font-weight: 300;
-
-    letter-spacing: 10px;
 
     margin-bottom: 20px;
 
     text-shadow:
-        0 0 15px #00ffff,
-        0 0 35px #ff00cc;
+        0 0 10px #00ffff,
+        0 0 30px #ff00ff;
 }
 
-#startScreen p {
+.subtitle {
+
     color: #aaa;
 
-    max-width: 650px;
+    max-width: 500px;
 
     line-height: 1.6;
 
-    padding: 0 20px;
-
     margin-bottom: 35px;
+
+    padding: 0 20px;
 }
 
-#startButton {
+#startBtn {
+
     border: none;
 
-    padding: 16px 42px;
+    padding: 16px 38px;
 
     border-radius: 40px;
 
     color: white;
-
-    font-size: 16px;
-
-    font-weight: bold;
-
-    letter-spacing: 2px;
-
-    cursor: pointer;
 
     background:
         linear-gradient(
@@ -170,229 +341,37 @@ body {
             #3333ff
         );
 
-    box-shadow:
-        0 0 20px #ff00cc88,
-        0 0 50px #3333ff55;
-
-    transition: transform 0.2s ease;
-}
-
-#startButton:hover {
-    transform: scale(1.06);
-}
-
-/* HUD */
-
-#hud {
-    position: fixed;
-
-    top: 20px;
-    left: 20px;
-
-    z-index: 20;
-
-    display: none;
-
-    flex-direction: column;
-
-    gap: 12px;
-}
-
-.panel {
-    min-width: 235px;
-
-    padding: 15px 18px;
-
-    border-radius: 15px;
-
-    background: var(--glass);
-
-    border: 1px solid var(--border);
-
-    backdrop-filter: blur(16px);
-
-    box-shadow:
-        0 15px 40px rgba(0,0,0,0.5);
-}
-
-.row {
-    display: flex;
-
-    justify-content: space-between;
-
-    gap: 25px;
-
-    margin: 7px 0;
-
-    color: #ddd;
-
-    font-size: 14px;
-}
-
-.value {
-    color: var(--accent);
-
     font-weight: bold;
-}
 
-/* POWER */
+    font-size: 16px;
 
-.powerTitle {
-    display: flex;
-
-    justify-content: space-between;
-
-    margin-top: 12px;
-
-    margin-bottom: 5px;
-
-    font-size: 13px;
-}
-
-.powerBackground {
-    width: 100%;
-
-    height: 7px;
-
-    overflow: hidden;
-
-    border-radius: 10px;
-
-    background: rgba(255,255,255,0.12);
-}
-
-#powerBar {
-    width: 0%;
-
-    height: 100%;
-
-    border-radius: 10px;
-
-    background:
-        linear-gradient(
-            90deg,
-            #00ffcc,
-            #00aaff,
-            #ff00cc,
-            white
-        );
-
-    box-shadow:
-        0 0 12px var(--accent);
-
-    transition: width 0.12s ease;
-}
-
-/* RIGHT CONTROLS */
-
-#controls {
-    position: fixed;
-
-    top: 20px;
-    right: 20px;
-
-    z-index: 20;
-
-    display: none;
-
-    flex-direction: column;
-
-    gap: 8px;
-}
-
-.controlButton {
-    border: 1px solid var(--border);
-
-    border-radius: 20px;
-
-    padding: 9px 14px;
-
-    color: white;
-
-    background: var(--glass);
-
-    backdrop-filter: blur(12px);
+    letter-spacing: 2px;
 
     cursor: pointer;
 
-    transition: 0.2s;
+    box-shadow:
+        0 0 20px rgba(255,0,204,0.5);
+
+    transition: 0.3s;
 }
 
-.controlButton:hover {
-    background: rgba(255,255,255,0.18);
+#startBtn:hover {
 
-    transform: translateY(-2px);
-}
-
-/* THEMES */
-
-#themes {
-    position: fixed;
-
-    bottom: 20px;
-
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    z-index: 20;
-
-    display: none;
-
-    gap: 6px;
-
-    max-width: 95vw;
-
-    overflow-x: auto;
-
-    padding: 7px;
-
-    border: 1px solid var(--border);
-
-    border-radius: 30px;
-
-    background: var(--glass);
-
-    backdrop-filter: blur(15px);
-}
-
-.themeButton {
-    white-space: nowrap;
-
-    border: 1px solid transparent;
-
-    border-radius: 20px;
-
-    padding: 8px 13px;
-
-    color: white;
-
-    background: transparent;
-
-    cursor: pointer;
-
-    transition: 0.2s;
-}
-
-.themeButton:hover {
-    background: rgba(255,255,255,0.12);
-}
-
-.themeButton.active {
-    background: rgba(255,255,255,0.18);
-
-    border-color: rgba(255,255,255,0.3);
+    transform: scale(1.06);
 
     box-shadow:
-        0 0 15px rgba(255,255,255,0.15);
+        0 0 35px rgba(255,0,204,0.8);
 }
 
-/* STATUS */
+/* =========================================================
+   STATUS
+========================================================= */
 
 #status {
+
     position: fixed;
 
-    bottom: 82px;
+    bottom: 85px;
 
     left: 50%;
 
@@ -400,54 +379,24 @@ body {
 
     z-index: 20;
 
-    display: none;
+    padding: 8px 16px;
 
-    padding: 9px 18px;
+    border-radius: 20px;
 
-    border-radius: 25px;
+    background: rgba(0,0,0,0.45);
 
-    background: rgba(0,0,0,0.55);
+    color: rgba(255,255,255,0.7);
+
+    font-size: 12px;
 
     backdrop-filter: blur(10px);
-
-    color: #ddd;
-
-    font-size: 13px;
-
-    white-space: nowrap;
 }
 
-/* ERROR */
+/* =========================================================
+   MOBILE
+========================================================= */
 
-#errorBox {
-    position: fixed;
-
-    top: 20px;
-
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    z-index: 200;
-
-    display: none;
-
-    max-width: 90%;
-
-    padding: 13px 18px;
-
-    border-radius: 10px;
-
-    background: rgba(180,0,50,0.92);
-
-    color: white;
-
-    text-align: center;
-}
-
-/* MOBILE */
-
-@media (max-width: 700px) {
+@media(max-width:600px) {
 
     #hud {
         top: 10px;
@@ -455,129 +404,101 @@ body {
     }
 
     .panel {
-        min-width: 190px;
-
-        padding: 10px 12px;
+        min-width: 175px;
+        padding: 11px 14px;
     }
 
-    .row {
+    .stat {
         font-size: 12px;
     }
 
-    #controls {
-        top: 10px;
-        right: 10px;
-    }
-
-    .controlButton {
-        padding: 7px 10px;
-
-        font-size: 11px;
-    }
-
     #themes {
-        bottom: 10px;
+        bottom: 15px;
+
+        max-width: 95vw;
+
+        overflow-x: auto;
     }
 
-    .themeButton {
-        padding: 7px 9px;
-
+    .theme-btn {
+        padding: 8px 11px;
         font-size: 11px;
     }
+
 }
+
 </style>
 </head>
 
 <body>
 
-<!-- CAMERA -->
+<!-- =====================================================
+     CAMERA
+===================================================== -->
+
 <video
     id="video"
     autoplay
-    playsinline
-    muted>
+    muted
+    playsinline>
 </video>
 
-<!-- CANVASES -->
+<!-- =====================================================
+     CANVASES
+===================================================== -->
+
 <canvas id="backgroundCanvas"></canvas>
+
 <canvas id="effectCanvas"></canvas>
 
 
-<!-- START -->
-<div id="startScreen">
+<!-- =====================================================
+     HUD
+===================================================== -->
 
-    <h1>NEON AURA AR</h1>
-
-    <p>
-        Advanced hand tracking experience with
-        neon particles, energy portals, fingertip trails,
-        lightning and interactive gestures.
-    </p>
-
-    <button id="startButton">
-        ENTER EXPERIENCE
-    </button>
-
-</div>
-
-
-<!-- ERROR -->
-<div id="errorBox"></div>
-
-
-<!-- HUD -->
 <div id="hud">
 
     <div class="panel">
 
-        <div class="row">
-            <span>Hands</span>
+        <div class="stat">
+            <span>Hands Detected</span>
             <span
                 class="value"
-                id="handsValue">
+                id="handsCount">
                 0
             </span>
         </div>
 
-        <div class="row">
+        <div class="stat">
             <span>FPS</span>
             <span
                 class="value"
-                id="fpsValue">
+                id="fps">
                 0
             </span>
         </div>
 
-        <div class="row">
+    </div>
+
+
+    <div class="panel">
+
+        <div class="stat">
             <span>Gesture</span>
             <span
                 class="value"
-                id="gestureValue">
+                id="gesture">
                 None
             </span>
         </div>
 
-        <div class="row">
+        <div class="stat">
             <span>Spread</span>
             <span
                 class="value"
-                id="spreadValue">
+                id="spread">
                 0%
             </span>
-        </div>
-
-        <div class="powerTitle">
-            <span>ENERGY POWER</span>
-
-            <span
-                class="value"
-                id="powerValue">
-                0%
-            </span>
-        </div>
-
-        <div class="powerBackground">
-            <div id="powerBar"></div>
         </div>
 
     </div>
@@ -585,97 +506,73 @@ body {
 </div>
 
 
-<!-- CONTROLS -->
-<div id="controls">
+<!-- =====================================================
+     THEME BUTTONS
+===================================================== -->
 
-    <button
-        class="controlButton"
-        id="captureButton">
-        📸 Capture
-    </button>
-
-    <button
-        class="controlButton"
-        id="trailButton">
-        ✨ Trails: ON
-    </button>
-
-    <button
-        class="controlButton"
-        id="portalButton">
-        🌀 Portal: ON
-    </button>
-
-</div>
-
-
-<!-- STATUS -->
-<div id="status">
-    Show your hand 🖐️
-</div>
-
-
-<!-- THEMES -->
 <div id="themes">
 
     <button
-        class="themeButton active"
+        class="theme-btn active"
         data-theme="Rainbow">
         🌈 Rainbow
     </button>
 
     <button
-        class="themeButton"
+        class="theme-btn"
         data-theme="Cyberpunk">
-        💗 Cyberpunk
+        💜 Cyberpunk
     </button>
 
     <button
-        class="themeButton"
+        class="theme-btn"
         data-theme="Lava">
         🔥 Lava
     </button>
 
     <button
-        class="themeButton"
+        class="theme-btn"
         data-theme="Ocean">
         🌊 Ocean
     </button>
 
     <button
-        class="themeButton"
+        class="theme-btn"
         data-theme="Galaxy">
         🌌 Galaxy
     </button>
 
-    <button
-        class="themeButton"
-        data-theme="Aurora">
-        🌈 Aurora
-    </button>
+</div>
 
-    <button
-        class="themeButton"
-        data-theme="Ice">
-        ❄️ Ice
-    </button>
 
-    <button
-        class="themeButton"
-        data-theme="Inferno">
-        🔥 Inferno
-    </button>
+<div id="status">
+    Waiting for camera...
+</div>
 
-    <button
-        class="themeButton"
-        data-theme="Mystic">
-        🔮 Mystic
-    </button>
 
-    <button
-        class="themeButton"
-        data-theme="Toxic">
-        ☢️ Toxic
+<!-- =====================================================
+     START SCREEN
+===================================================== -->
+
+<div id="startOverlay">
+
+    <div class="title">
+        NEON AURA
+    </div>
+
+    <div class="subtitle">
+
+        Advanced Hand Tracking AR Experience
+
+        <br><br>
+
+        Allow camera access and move your hands
+        in front of the camera.
+
+    </div>
+
+    <button id="startBtn">
+        ENTER EXPERIENCE
     </button>
 
 </div>
@@ -690,60 +587,43 @@ body {
 const video =
     document.getElementById("video");
 
-const backgroundCanvas =
+const bgCanvas =
     document.getElementById("backgroundCanvas");
 
 const effectCanvas =
     document.getElementById("effectCanvas");
 
 const bg =
-    backgroundCanvas.getContext("2d");
+    bgCanvas.getContext("2d");
 
 const ctx =
     effectCanvas.getContext("2d");
 
-const startScreen =
-    document.getElementById("startScreen");
 
-const startButton =
-    document.getElementById("startButton");
+const handsCount =
+    document.getElementById("handsCount");
 
-const hud =
-    document.getElementById("hud");
+const fpsDisplay =
+    document.getElementById("fps");
 
-const controls =
-    document.getElementById("controls");
+const gestureDisplay =
+    document.getElementById("gesture");
 
-const themes =
-    document.getElementById("themes");
+const spreadDisplay =
+    document.getElementById("spread");
 
-const status =
+const statusDisplay =
     document.getElementById("status");
 
-const errorBox =
-    document.getElementById("errorBox");
+const startOverlay =
+    document.getElementById("startOverlay");
 
-const handsValue =
-    document.getElementById("handsValue");
-
-const fpsValue =
-    document.getElementById("fpsValue");
-
-const gestureValue =
-    document.getElementById("gestureValue");
-
-const spreadValue =
-    document.getElementById("spreadValue");
-
-const powerValue =
-    document.getElementById("powerValue");
-
-const powerBar =
-    document.getElementById("powerBar");
+const startBtn =
+    document.getElementById("startBtn");
 
 
 /* =========================================================
-   GLOBAL STATE
+   VARIABLES
 ========================================================= */
 
 let width =
@@ -752,185 +632,89 @@ let width =
 let height =
     window.innerHeight;
 
-let currentTheme =
-    "Rainbow";
-
-let time = 0;
-
-let lastFrame =
-    performance.now();
-
-let fpsFrames = 0;
-
-let fpsTimer =
-    performance.now();
-
 let currentHands = [];
-
-let previousHands = [];
 
 let particles = [];
 
 let ripples = [];
 
-let trails = [];
+let lastTime =
+    performance.now();
 
-let sparks = [];
+let time = 0;
 
-let matrixDrops = [];
+let frames = 0;
 
-let trailEnabled = true;
-
-let portalEnabled = true;
-
-let power = 0;
-
-let lastPinch =
-    [false, false];
+let fpsTime =
+    performance.now();
 
 let cameraStream = null;
 
+let mediaPipeHands = null;
 
-/* =========================================================
-   CONSTANTS
-========================================================= */
-
-const FINGER_TIPS =
-    [4, 8, 12, 16, 20];
-
-const FINGER_NAMES =
-    [
-        "Thumb",
-        "Index",
-        "Middle",
-        "Ring",
-        "Pinky"
-    ];
+let camera = null;
 
 
 /* =========================================================
    THEMES
 ========================================================= */
 
-const themeFunctions = {
+let currentTheme = "Rainbow";
 
-    Rainbow: function(t, i, total) {
+const themes = {
 
-        return `hsl(
-            ${(t * 100 + i * (360 / total)) % 360},
-            100%,
-            60%
-        )`;
+    Rainbow: function(t,index,total) {
 
+        return `
+            hsl(
+                ${(t * 100 + index * (360 / total)) % 360},
+                100%,
+                60%
+            )
+        `;
     },
 
-    Cyberpunk: function(t, i) {
+    Cyberpunk: function(t,index,total) {
 
-        return i % 2 === 0
-            ? "#ff0066"
-            : "#00f5ff";
-
+        return index % 2 === 0
+            ? "#ff0088"
+            : "#00ffff";
     },
 
-    Lava: function(t, i) {
+    Lava: function(t,index,total) {
 
-        return `hsl(
-            ${10 + i * 8},
-            100%,
-            ${55 + Math.sin(t * 2) * 8}%
-        )`;
-
+        return `
+            hsl(
+                ${10 + index * 8},
+                100%,
+                ${55 + Math.sin(t) * 10}%
+            )
+        `;
     },
 
-    Ocean: function(t, i) {
+    Ocean: function(t,index,total) {
 
-        return `hsl(
-            ${180 + i * 18},
-            100%,
-            62%
-        )`;
-
+        return `
+            hsl(
+                ${180 + index * 15},
+                100%,
+                60%
+            )
+        `;
     },
 
-    Galaxy: function(t, i) {
+    Galaxy: function(t,index,total) {
 
-        return `hsl(
-            ${250 + Math.sin(t * 2 + i) * 45},
-            100%,
-            68%
-        )`;
-
-    },
-
-    Aurora: function(t, i) {
-
-        return `hsl(
-            ${120 + Math.sin(t + i) * 50},
-            100%,
-            65%
-        )`;
-
-    },
-
-    Ice: function(t, i) {
-
-        return `hsl(
-            ${185 + i * 12},
-            100%,
-            72%
-        )`;
-
-    },
-
-    Inferno: function(t, i) {
-
-        return `hsl(
-            ${5 + i * 12},
-            100%,
-            58%
-        )`;
-
-    },
-
-    Mystic: function(t, i) {
-
-        return `hsl(
-            ${285 + Math.sin(t + i) * 30},
-            100%,
-            68%
-        )`;
-
-    },
-
-    Toxic: function(t, i) {
-
-        return `hsl(
-            ${75 + i * 20},
-            100%,
-            60%
-        )`;
-
+        return `
+            hsl(
+                ${260 + Math.sin(t * 2 + index) * 40},
+                100%,
+                65%
+            )
+        `;
     }
 
 };
-
-
-/* =========================================================
-   COLOR
-========================================================= */
-
-function getColor(
-    index = 0,
-    total = 5
-) {
-
-    return themeFunctions[currentTheme](
-        time,
-        index,
-        total
-    );
-
-}
 
 
 /* =========================================================
@@ -945,10 +729,10 @@ function resize() {
     height =
         window.innerHeight;
 
-    backgroundCanvas.width =
+    bgCanvas.width =
         width;
 
-    backgroundCanvas.height =
+    bgCanvas.height =
         height;
 
     effectCanvas.width =
@@ -956,16 +740,6 @@ function resize() {
 
     effectCanvas.height =
         height;
-
-    const columns =
-        Math.ceil(width / 16);
-
-    matrixDrops =
-        Array.from(
-            { length: columns },
-            () => Math.random() * height / 16
-        );
-
 }
 
 window.addEventListener(
@@ -977,57 +751,11 @@ resize();
 
 
 /* =========================================================
-   ERROR
-========================================================= */
-
-function showError(message) {
-
-    errorBox.textContent =
-        message;
-
-    errorBox.style.display =
-        "block";
-
-}
-
-
-/* =========================================================
-   DISTANCE
-========================================================= */
-
-function distance(a, b) {
-
-    return Math.hypot(
-        a.x - b.x,
-        a.y - b.y
-    );
-
-}
-
-
-/* =========================================================
-   LANDMARK TO CANVAS
-========================================================= */
-
-function canvasPoint(point) {
-
-    return {
-
-        x: point.x * width,
-
-        y: point.y * height
-
-    };
-
-}
-
-
-/* =========================================================
-   THEME BUTTONS
+   THEME SWITCHING
 ========================================================= */
 
 document
-.querySelectorAll(".themeButton")
+.querySelectorAll(".theme-btn")
 .forEach(button => {
 
     button.addEventListener(
@@ -1035,9 +763,9 @@ document
         () => {
 
             document
-            .querySelectorAll(".themeButton")
-            .forEach(b =>
-                b.classList.remove("active")
+            .querySelectorAll(".theme-btn")
+            .forEach(btn =>
+                btn.classList.remove("active")
             );
 
             button.classList.add("active");
@@ -1049,9 +777,12 @@ document
             .style
             .setProperty(
                 "--accent",
-                getColor(1, 2)
+                themes[currentTheme](
+                    time,
+                    1,
+                    5
+                )
             );
-
         }
     );
 
@@ -1059,152 +790,10 @@ document
 
 
 /* =========================================================
-   TRAIL BUTTON
+   START EXPERIENCE
 ========================================================= */
 
-document
-.getElementById("trailButton")
-.addEventListener(
-    "click",
-    () => {
-
-        trailEnabled =
-            !trailEnabled;
-
-        document
-        .getElementById("trailButton")
-        .textContent =
-            `✨ Trails: ${
-                trailEnabled
-                ? "ON"
-                : "OFF"
-            }`;
-
-        if (!trailEnabled) {
-
-            trails = [];
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   PORTAL BUTTON
-========================================================= */
-
-document
-.getElementById("portalButton")
-.addEventListener(
-    "click",
-    () => {
-
-        portalEnabled =
-            !portalEnabled;
-
-        document
-        .getElementById("portalButton")
-        .textContent =
-            `🌀 Portal: ${
-                portalEnabled
-                ? "ON"
-                : "OFF"
-            }`;
-
-    }
-);
-
-
-/* =========================================================
-   SCREENSHOT
-========================================================= */
-
-document
-.getElementById("captureButton")
-.addEventListener(
-    "click",
-    captureImage
-);
-
-
-function captureImage() {
-
-    const output =
-        document.createElement("canvas");
-
-    output.width =
-        width;
-
-    output.height =
-        height;
-
-    const outputContext =
-        output.getContext("2d");
-
-    /*
-       Mirror camera into screenshot
-    */
-
-    outputContext.save();
-
-    outputContext.translate(
-        width,
-        0
-    );
-
-    outputContext.scale(
-        -1,
-        1
-    );
-
-    outputContext.drawImage(
-        video,
-        0,
-        0,
-        width,
-        height
-    );
-
-    outputContext.restore();
-
-    /*
-       Add effects
-    */
-
-    outputContext.drawImage(
-        backgroundCanvas,
-        0,
-        0
-    );
-
-    outputContext.drawImage(
-        effectCanvas,
-        0,
-        0
-    );
-
-    const link =
-        document.createElement("a");
-
-    link.download =
-        "neon-aura-ar.png";
-
-    link.href =
-        output.toDataURL(
-            "image/png"
-        );
-
-    link.click();
-
-}
-
-
-/* =========================================================
-   START
-========================================================= */
-
-startButton.addEventListener(
+startBtn.addEventListener(
     "click",
     startExperience
 );
@@ -1212,30 +801,23 @@ startButton.addEventListener(
 
 async function startExperience() {
 
+    startBtn.disabled = true;
+
+    startBtn.innerText =
+        "STARTING...";
+
+    statusDisplay.innerText =
+        "Requesting camera permission...";
+
     try {
 
-        startButton.textContent =
-            "REQUESTING CAMERA...";
-
-        /*
-           GitHub Pages runs on HTTPS,
-           so camera access is allowed.
-        */
-
-        if (
-            !navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia
-        ) {
-
-            throw new Error(
-                "Camera API unavailable."
-            );
-
-        }
-
+        /* =========================================
+           CAMERA
+        ========================================= */
 
         cameraStream =
-            await navigator.mediaDevices
+            await navigator
+            .mediaDevices
             .getUserMedia({
 
                 video: {
@@ -1257,53 +839,111 @@ async function startExperience() {
             });
 
 
+        /* =========================================
+           CONNECT CAMERA TO VIDEO
+        ========================================= */
+
         video.srcObject =
             cameraStream;
+
+        video.muted =
+            true;
+
+        video.playsInline =
+            true;
+
+        video.style.display =
+            "block";
+
+
+        /* =========================================
+           WAIT FOR VIDEO
+        ========================================= */
+
+        await new Promise(
+            resolve => {
+
+                if (
+                    video.readyState >= 2
+                ) {
+
+                    resolve();
+
+                } else {
+
+                    video.onloadedmetadata =
+                        () => resolve();
+
+                }
+
+            }
+        );
+
 
         await video.play();
 
 
-        /*
-           Initialize MediaPipe
-        */
+        console.log(
+            "Camera started:",
+            video.videoWidth,
+            "x",
+            video.videoHeight
+        );
 
-        await initializeMediaPipe();
+
+        statusDisplay.innerText =
+            "Camera active • Show your hand";
 
 
-        startScreen
-        .classList
-        .add("hidden");
+        /* =========================================
+           START MEDIAPIPE
+        ========================================= */
 
-        hud.style.display =
-            "flex";
+        initMediaPipe();
 
-        controls.style.display =
-            "flex";
 
-        themes.style.display =
-            "flex";
+        /* =========================================
+           HIDE START SCREEN
+        ========================================= */
 
-        status.style.display =
-            "block";
+        setTimeout(() => {
 
-        status.textContent =
-            "Show your hand 🖐️";
+            startOverlay.classList.add(
+                "hidden"
+            );
 
+        }, 300);
+
+
+        /* =========================================
+           START RENDER LOOP
+        ========================================= */
 
         requestAnimationFrame(
             renderLoop
         );
 
+    }
 
-    } catch (error) {
+    catch(error) {
 
-        console.error(error);
+        console.error(
+            "Camera error:",
+            error
+        );
 
-        startButton.textContent =
+        statusDisplay.innerText =
+            "Camera permission denied or unavailable";
+
+        startBtn.disabled =
+            false;
+
+        startBtn.innerText =
             "TRY AGAIN";
 
-        showError(
-            "Camera could not start. Please allow camera permission and reload the GitHub Pages website."
+        alert(
+            "Camera could not be started.\n\n" +
+            "Please allow camera permission and reload the page."
         );
 
     }
@@ -1315,370 +955,109 @@ async function startExperience() {
    MEDIAPIPE
 ========================================================= */
 
-async function initializeMediaPipe() {
+function initMediaPipe() {
 
-    if (
-        typeof Hands ===
-        "undefined"
-    ) {
-
-        throw new Error(
-            "MediaPipe failed to load."
-        );
-
-    }
-
-
-    const hands =
+    mediaPipeHands =
         new Hands({
 
-            locateFile:
-                function(file) {
+            locateFile: function(file) {
 
-                    return (
-                        "https://cdn.jsdelivr.net/npm/" +
-                        "@mediapipe/hands/" +
-                        file
-                    );
+                return `
+                    https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}
+                `;
 
-                }
+            }
 
         });
 
 
-    hands.setOptions({
+    mediaPipeHands.setOptions({
 
         maxNumHands: 2,
 
         modelComplexity: 1,
 
-        minDetectionConfidence: 0.65,
+        minDetectionConfidence: 0.6,
 
-        minTrackingConfidence: 0.65
+        minTrackingConfidence: 0.6
 
     });
 
 
-    hands.onResults(
-        processResults
+    mediaPipeHands.onResults(
+        onHandsResults
     );
 
 
-    /*
-       Camera loop
-    */
+    camera =
+        new Camera(
+            video,
+            {
 
-    async function sendFrame() {
+                onFrame: async function() {
 
-        if (
-            video.readyState >= 2
-        ) {
+                    try {
 
-            try {
+                        await mediaPipeHands
+                            .send({
+                                image: video
+                            });
 
-                await hands.send({
-                    image: video
-                });
+                    }
 
-            } catch(error) {
+                    catch(error) {
 
-                console.warn(
-                    "MediaPipe frame error:",
-                    error
-                );
+                        console.error(
+                            "MediaPipe error:",
+                            error
+                        );
+
+                    }
+
+                },
+
+                width: 1280,
+
+                height: 720,
+
+                facingMode: "user"
 
             }
-
-        }
-
-        requestAnimationFrame(
-            sendFrame
         );
 
-    }
 
-    sendFrame();
+    camera.start();
 
 }
 
 
 /* =========================================================
-   RESULTS
+   HAND RESULTS
 ========================================================= */
 
-function processResults(
-    results
-) {
-
-    const detected =
-        results.multiHandLandmarks ||
-        [];
-
-
-    /*
-       Calculate movement
-    */
-
-    let movement = 0;
-
-
-    if (
-        previousHands.length > 0 &&
-        detected.length > 0
-    ) {
-
-        movement =
-            distance(
-                previousHands[0][8],
-                detected[0][8]
-            );
-
-    }
-
-
-    previousHands =
-        detected.map(
-            hand =>
-                hand.map(
-                    point => ({
-                        x: point.x,
-                        y: point.y,
-                        z: point.z
-                    })
-                )
-        );
-
+function onHandsResults(results) {
 
     currentHands =
-        detected;
+        results.multiHandLandmarks || [];
 
 
-    handsValue.textContent =
+    handsCount.innerText =
         currentHands.length;
 
 
-    /*
-       Power calculation
-    */
-
-    const movementPower =
-        Math.min(
-            1,
-            movement * 18
-        );
-
-
-    let proximityPower = 0;
-
-
     if (
-        currentHands.length >= 2
+        currentHands.length > 0
     ) {
 
-        proximityPower =
-            1 -
-            Math.min(
-                1,
-                distance(
-                    currentHands[0][8],
-                    currentHands[1][8]
-                ) * 2
-            );
-
-    }
-
-
-    const targetPower =
-        Math.min(
-            100,
-            currentHands.length * 25 +
-            movementPower * 45 +
-            proximityPower * 30
-        );
-
-
-    power +=
-        (
-            targetPower -
-            power
-        ) * 0.12;
-
-
-    powerValue.textContent =
-        Math.round(power) +
-        "%";
-
-    powerBar.style.width =
-        power + "%";
-
-
-    detectGestures();
-
-}
-
-
-/* =========================================================
-   GESTURES
-========================================================= */
-
-function detectGestures() {
-
-    if (
-        currentHands.length === 0
-    ) {
-
-        gestureValue.textContent =
-            "None";
-
-        spreadValue.textContent =
-            "0%";
-
-        return;
-
-    }
-
-
-    const hand =
-        currentHands[0];
-
-
-    /*
-       PINCH
-    */
-
-    const pinchDistance =
-        distance(
-            hand[4],
-            hand[8]
-        );
-
-
-    const pinch =
-        pinchDistance < 0.055;
-
-
-    /*
-       SPREAD
-    */
-
-    const spread =
-        Math.min(
-            100,
-            Math.round(
-                distance(
-                    hand[8],
-                    hand[20]
-                ) * 300
-            )
-        );
-
-
-    spreadValue.textContent =
-        spread + "%";
-
-
-    if (pinch) {
-
-        gestureValue.textContent =
-            "PINCH ⚡";
-
-
-        if (!lastPinch[0]) {
-
-            const middle = {
-
-                x:
-                    (
-                        hand[4].x +
-                        hand[8].x
-                    ) / 2,
-
-                y:
-                    (
-                        hand[4].y +
-                        hand[8].y
-                    ) / 2
-
-            };
-
-
-            const point =
-                canvasPoint(
-                    middle
-                );
-
-
-            createBurst(
-                point.x,
-                point.y,
-                35
-            );
-
-
-            createRipple(
-                point.x,
-                point.y,
-                20,
-                260
-            );
-
-        }
-
-
-        lastPinch[0] =
-            true;
-
-
-        return;
-
-    }
-
-
-    lastPinch[0] =
-        false;
-
-
-    /*
-       INDEX FINGER
-    */
-
-    const indexUp =
-        hand[8].y <
-        hand[6].y;
-
-
-    const middleDown =
-        hand[12].y >
-        hand[10].y;
-
-
-    /*
-       PEACE
-    */
-
-    if (
-        indexUp &&
-        !middleDown
-    ) {
-
-        gestureValue.textContent =
-            "PEACE ✌️";
-
-    }
-
-    else if (
-        spread > 55
-    ) {
-
-        gestureValue.textContent =
-            "OPEN HAND 🖐️";
+        statusDisplay.innerText =
+            "Hand detected • Move your hand";
 
     }
 
     else {
 
-        gestureValue.textContent =
-            "FIST ✊";
+        statusDisplay.innerText =
+            "Camera active • Show your hand";
 
     }
 
@@ -1686,13 +1065,56 @@ function detectGestures() {
 
 
 /* =========================================================
-   PARTICLE BURST
+   DISTANCE
 ========================================================= */
 
-function createBurst(
+function distance(a,b) {
+
+    return Math.sqrt(
+
+        Math.pow(
+            a.x - b.x,
+            2
+        )
+
+        +
+
+        Math.pow(
+            a.y - b.y,
+            2
+        )
+
+    );
+
+}
+
+
+/* =========================================================
+   MAP HAND TO SCREEN
+========================================================= */
+
+function mapPoint(point) {
+
+    return {
+
+        x: point.x * width,
+
+        y: point.y * height
+
+    };
+
+}
+
+
+/* =========================================================
+   PARTICLES
+========================================================= */
+
+function createParticles(
     x,
     y,
-    amount = 20
+    color,
+    amount = 2
 ) {
 
     for (
@@ -1701,14 +1123,6 @@ function createBurst(
         i++
     ) {
 
-        const angle =
-            Math.random() *
-            Math.PI * 2;
-
-        const speed =
-            Math.random() * 8 + 2;
-
-
         particles.push({
 
             x: x,
@@ -1716,23 +1130,19 @@ function createBurst(
             y: y,
 
             vx:
-                Math.cos(angle) *
-                speed,
+                (Math.random() - 0.5)
+                * 5,
 
             vy:
-                Math.sin(angle) *
-                speed,
+                (Math.random() - 0.5)
+                * 5,
 
             life: 1,
 
             size:
-                Math.random() * 4 + 1,
+                Math.random() * 3 + 1,
 
-            color:
-                getColor(
-                    i,
-                    6
-                )
+            color: color
 
         });
 
@@ -1742,14 +1152,13 @@ function createBurst(
 
 
 /* =========================================================
-   RIPPLE
+   SHOCKWAVE
 ========================================================= */
 
-function createRipple(
+function shockwave(
     x,
     y,
-    radius,
-    maximum
+    color
 ) {
 
     ripples.push({
@@ -1758,14 +1167,15 @@ function createRipple(
 
         y: y,
 
-        radius: radius,
+        radius: 5,
 
-        maxRadius: maximum,
+        maxRadius:
+            120 +
+            Math.random() * 120,
 
         life: 1,
 
-        color:
-            getColor(1,3)
+        color: color
 
     });
 
@@ -1773,13 +1183,208 @@ function createRipple(
 
 
 /* =========================================================
-   MATRIX BACKGROUND
+   GESTURE DETECTION
 ========================================================= */
 
-function drawMatrix() {
+let previousPinch =
+    [false,false];
+
+
+function detectGestures() {
+
+    if (
+        currentHands.length === 0
+    ) {
+
+        gestureDisplay.innerText =
+            "None";
+
+        spreadDisplay.innerText =
+            "0%";
+
+        return;
+
+    }
+
+
+    let pinching =
+        false;
+
+
+    currentHands.forEach(
+        (hand,index) => {
+
+            const thumb =
+                hand[4];
+
+            const indexFinger =
+                hand[8];
+
+
+            const d =
+                distance(
+                    thumb,
+                    indexFinger
+                );
+
+
+            const isPinching =
+                d < 0.055;
+
+
+            if (
+                isPinching &&
+                !previousPinch[index]
+            ) {
+
+                const point = {
+
+                    x:
+                        (
+                            thumb.x +
+                            indexFinger.x
+                        ) / 2,
+
+                    y:
+                        (
+                            thumb.y +
+                            indexFinger.y
+                        ) / 2
+
+                };
+
+
+                const screenPoint =
+                    mapPoint(point);
+
+
+                shockwave(
+
+                    screenPoint.x,
+
+                    screenPoint.y,
+
+                    themes[currentTheme](
+                        time,
+                        index,
+                        5
+                    )
+
+                );
+
+
+                createParticles(
+
+                    screenPoint.x,
+
+                    screenPoint.y,
+
+                    themes[currentTheme](
+                        time,
+                        index,
+                        5
+                    ),
+
+                    15
+
+                );
+
+            }
+
+
+            previousPinch[index] =
+                isPinching;
+
+
+            if (isPinching) {
+
+                pinching = true;
+
+            }
+
+        }
+    );
+
+
+    if (pinching) {
+
+        gestureDisplay.innerText =
+            "PINCH";
+
+    }
+
+    else {
+
+        gestureDisplay.innerText =
+            "Open Hand";
+
+    }
+
+
+    /* =========================================
+       SPREAD
+    ========================================= */
+
+    const hand =
+        currentHands[0];
+
+
+    const spread =
+        distance(
+            hand[8],
+            hand[20]
+        );
+
+
+    const percentage =
+        Math.min(
+            Math.round(
+                spread * 300
+            ),
+            100
+        );
+
+
+    spreadDisplay.innerText =
+        percentage + "%";
+
+}
+
+
+/* =========================================================
+   BACKGROUND
+========================================================= */
+
+let matrixDrops = [];
+
+function initMatrix() {
+
+    const columns =
+        Math.floor(
+            width / 18
+        );
+
+    matrixDrops =
+        new Array(columns)
+        .fill(0)
+        .map(
+            () =>
+                Math.random()
+                * height
+        );
+
+}
+
+
+initMatrix();
+
+
+function drawBackground() {
+
+    /* Slight transparent fade */
 
     bg.fillStyle =
-        "rgba(2,3,12,0.24)";
+        "rgba(2,3,12,0.08)";
 
     bg.fillRect(
         0,
@@ -1800,44 +1405,44 @@ function drawMatrix() {
     ) {
 
         if (
-            Math.random() <
-            0.055
+            Math.random() > 0.93
         ) {
 
-            bg.fillStyle =
-                getColor(
-                    i,
-                    10
-                );
-
-            bg.globalAlpha =
-                0.25;
-
-
-            const character =
+            const char =
                 String.fromCharCode(
                     0x30A0 +
                     Math.random() * 96
                 );
 
 
+            bg.fillStyle =
+                themes[currentTheme](
+                    time,
+                    i,
+                    matrixDrops.length
+                );
+
+
             bg.fillText(
-                character,
-                i * 16,
-                matrixDrops[i] * 16
+
+                char,
+
+                i * 18,
+
+                matrixDrops[i]
+
             );
 
         }
 
 
         matrixDrops[i] +=
-            1 +
-            power / 70;
+            1.5;
 
 
         if (
-            matrixDrops[i] * 16 >
-            height + 30
+            matrixDrops[i] >
+            height
         ) {
 
             matrixDrops[i] =
@@ -1847,835 +1452,36 @@ function drawMatrix() {
 
     }
 
-
-    bg.globalAlpha =
-        1;
-
 }
 
 
 /* =========================================================
-   HAND AURA
+   PARTICLE UPDATE
 ========================================================= */
 
-function drawHandAura(
-    hand,
-    index
-) {
-
-    const palm =
-        canvasPoint(
-            hand[0]
-        );
-
-
-    const color =
-        getColor(
-            index,
-            5
-        );
-
-
-    const radius =
-        70 +
-        power * 0.9;
-
-
-    const gradient =
-        ctx.createRadialGradient(
-            palm.x,
-            palm.y,
-            5,
-            palm.x,
-            palm.y,
-            radius
-        );
-
-
-    gradient.addColorStop(
-        0,
-        "#ffffff66"
-    );
-
-    gradient.addColorStop(
-        0.25,
-        color + "55"
-    );
-
-    gradient.addColorStop(
-        1,
-        "#00000000"
-    );
-
-
-    ctx.fillStyle =
-        gradient;
-
-
-    ctx.beginPath();
-
-    ctx.arc(
-        palm.x,
-        palm.y,
-        radius,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-}
-
-
-/* =========================================================
-   HAND SKELETON
-========================================================= */
-
-function drawHand(
-    hand,
-    handIndex
-) {
-
-    const connections = [
-
-        [0,1],
-        [1,2],
-        [2,3],
-        [3,4],
-
-        [0,5],
-        [5,6],
-        [6,7],
-        [7,8],
-
-        [5,9],
-        [9,10],
-        [10,11],
-        [11,12],
-
-        [9,13],
-        [13,14],
-        [14,15],
-        [15,16],
-
-        [13,17],
-        [17,18],
-        [18,19],
-        [19,20],
-
-        [0,17]
-
-    ];
-
-
-    const handColor =
-        getColor(
-            handIndex,
-            Math.max(
-                2,
-                currentHands.length
-            )
-        );
-
-
-    ctx.strokeStyle =
-        handColor;
-
-    ctx.lineWidth =
-        2.5;
-
-    ctx.shadowBlur =
-        18;
-
-    ctx.shadowColor =
-        handColor;
-
-
-    connections.forEach(
-        connection => {
-
-            const a =
-                canvasPoint(
-                    hand[
-                        connection[0]
-                    ]
-                );
-
-            const b =
-                canvasPoint(
-                    hand[
-                        connection[1]
-                    ]
-                );
-
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-                a.x,
-                a.y
-            );
-
-            ctx.lineTo(
-                b.x,
-                b.y
-            );
-
-            ctx.stroke();
-
-        }
-    );
-
-
-    ctx.shadowBlur =
-        0;
-
-
-    /*
-       FINGERTIPS
-    */
-
-    FINGER_TIPS.forEach(
-        (
-            tipIndex,
-            fingerIndex
-        ) => {
-
-            const point =
-                canvasPoint(
-                    hand[
-                        tipIndex
-                    ]
-                );
-
-
-            const tipColor =
-                getColor(
-                    fingerIndex,
-                    5
-                );
-
-
-            ctx.beginPath();
-
-            ctx.arc(
-                point.x,
-                point.y,
-                5 +
-                power * 0.025,
-                0,
-                Math.PI * 2
-            );
-
-
-            ctx.fillStyle =
-                "#ffffff";
-
-            ctx.shadowBlur =
-                25;
-
-            ctx.shadowColor =
-                tipColor;
-
-            ctx.fill();
-
-
-            ctx.shadowBlur =
-                0;
-
-
-            /*
-               TRAIL
-            */
-
-            if (trailEnabled) {
-
-                trails.push({
-
-                    x: point.x,
-
-                    y: point.y,
-
-                    life: 1,
-
-                    color:
-                        tipColor
-
-                });
-
-
-                if (
-                    trails.length >
-                    1000
-                ) {
-
-                    trails.splice(
-                        0,
-                        100
-                    );
-
-                }
-
-            }
-
-
-            /*
-               Tiny sparks
-            */
-
-            if (
-                Math.random() <
-                0.35
-            ) {
-
-                createBurst(
-                    point.x,
-                    point.y,
-                    1
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   FINGERTIP TRAILS
-========================================================= */
-
-function drawTrails() {
+function updateParticles() {
 
     for (
-        let i =
-            trails.length - 1;
+        let i = particles.length - 1;
         i >= 0;
         i--
     ) {
 
-        const trail =
-            trails[i];
-
-
-        trail.life -=
-            0.025;
-
-
-        if (
-            trail.life <= 0
-        ) {
-
-            trails.splice(
-                i,
-                1
-            );
-
-            continue;
-
-        }
-
-
-        ctx.globalAlpha =
-            trail.life * 0.45;
-
-
-        ctx.fillStyle =
-            trail.color;
-
-
-        ctx.shadowBlur =
-            12;
-
-        ctx.shadowColor =
-            trail.color;
-
-
-        ctx.beginPath();
-
-        ctx.arc(
-            trail.x,
-            trail.y,
-            2.5,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-    }
-
-
-    ctx.globalAlpha =
-        1;
-
-    ctx.shadowBlur =
-        0;
-
-}
-
-
-/* =========================================================
-   PORTAL
-========================================================= */
-
-function drawPortal() {
-
-    if (
-        !portalEnabled ||
-        currentHands.length < 2
-    ) {
-
-        return;
-
-    }
-
-
-    const hand1 =
-        canvasPoint(
-            currentHands[0][0]
-        );
-
-    const hand2 =
-        canvasPoint(
-            currentHands[1][0]
-        );
-
-
-    const centerX =
-        (
-            hand1.x +
-            hand2.x
-        ) / 2;
-
-
-    const centerY =
-        (
-            hand1.y +
-            hand2.y
-        ) / 2;
-
-
-    const handDistance =
-        Math.hypot(
-            hand1.x -
-            hand2.x,
-
-            hand1.y -
-            hand2.y
-        );
-
-
-    const radius =
-        Math.max(
-            30,
-            Math.min(
-                230,
-                handDistance * 0.42
-            )
-        );
-
-
-    ctx.save();
-
-
-    ctx.translate(
-        centerX,
-        centerY
-    );
-
-
-    ctx.rotate(
-        time * 0.8
-    );
-
-
-    for (
-        let i = 0;
-        i < 5;
-        i++
-    ) {
-
-        ctx.beginPath();
-
-        ctx.arc(
-            0,
-            0,
-            radius +
-            i * 12,
-            0,
-            Math.PI * 2
-        );
-
-
-        ctx.strokeStyle =
-            getColor(
-                i,
-                5
-            );
-
-        ctx.lineWidth =
-            3;
-
-
-        ctx.globalAlpha =
-            0.75 -
-            i * 0.1;
-
-
-        ctx.shadowBlur =
-            25;
-
-        ctx.shadowColor =
-            ctx.strokeStyle;
-
-
-        ctx.stroke();
-
-    }
-
-
-    ctx.restore();
-
-
-    ctx.globalAlpha =
-        1;
-
-    ctx.shadowBlur =
-        0;
-
-
-    /*
-       PORTAL SPARKS
-    */
-
-    if (
-        handDistance < 300 &&
-        Math.random() < 0.5
-    ) {
-
-        for (
-            let i = 0;
-            i < 6;
-            i++
-        ) {
-
-            createPortalSpark(
-                hand1,
-                hand2
-            );
-
-        }
-
-    }
-
-}
-
-
-/* =========================================================
-   PORTAL SPARK
-========================================================= */
-
-function createPortalSpark(
-    a,
-    b
-) {
-
-    const t =
-        Math.random();
-
-
-    const x =
-        a.x +
-        (
-            b.x -
-            a.x
-        ) * t;
-
-
-    const y =
-        a.y +
-        (
-            b.y -
-            a.y
-        ) * t;
-
-
-    sparks.push({
-
-        x: x,
-
-        y: y,
-
-        vx:
-            (Math.random() - 0.5) *
-            6,
-
-        vy:
-            (Math.random() - 0.5) *
-            6,
-
-        life: 1,
-
-        color:
-            getColor(
-                Math.floor(
-                    Math.random() * 6
-                ),
-                8
-            )
-
-    });
-
-}
-
-
-/* =========================================================
-   DRAW SPARKS
-========================================================= */
-
-function drawSparks() {
-
-    for (
-        let i =
-            sparks.length - 1;
-        i >= 0;
-        i--
-    ) {
-
-        const spark =
-            sparks[i];
-
-
-        spark.x +=
-            spark.vx;
-
-        spark.y +=
-            spark.vy;
-
-
-        spark.life -=
-            0.06;
-
-
-        if (
-            spark.life <= 0
-        ) {
-
-            sparks.splice(
-                i,
-                1
-            );
-
-            continue;
-
-        }
-
-
-        ctx.globalAlpha =
-            spark.life;
-
-
-        ctx.fillStyle =
-            spark.color;
-
-
-        ctx.shadowBlur =
-            18;
-
-        ctx.shadowColor =
-            spark.color;
-
-
-        ctx.beginPath();
-
-        ctx.arc(
-            spark.x,
-            spark.y,
-            2.5,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-    }
-
-
-    ctx.globalAlpha =
-        1;
-
-    ctx.shadowBlur =
-        0;
-
-}
-
-
-/* =========================================================
-   MANDALA
-========================================================= */
-
-function drawMandala() {
-
-    if (
-        currentHands.length <
-        2
-    ) {
-
-        return;
-
-    }
-
-
-    const points = [];
-
-
-    currentHands.forEach(
-        hand => {
-
-            FINGER_TIPS.forEach(
-                tip => {
-
-                    points.push(
-                        canvasPoint(
-                            hand[tip]
-                        )
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    let centerX = 0;
-    let centerY = 0;
-
-
-    points.forEach(
-        point => {
-
-            centerX +=
-                point.x;
-
-            centerY +=
-                point.y;
-
-        }
-    );
-
-
-    centerX /=
-        points.length;
-
-    centerY /=
-        points.length;
-
-
-    ctx.save();
-
-
-    ctx.translate(
-        centerX,
-        centerY
-    );
-
-
-    ctx.rotate(
-        time * 0.4
-    );
-
-
-    ctx.strokeStyle =
-        "rgba(255,255,255,0.22)";
-
-    ctx.lineWidth =
-        1;
-
-
-    for (
-        let i = 0;
-        i < points.length;
-        i++
-    ) {
-
-        const a =
-            points[i];
-
-        const b =
-            points[
-                (i + 3) %
-                points.length
-            ];
-
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-            a.x - centerX,
-            a.y - centerY
-        );
-
-        ctx.lineTo(
-            b.x - centerX,
-            b.y - centerY
-        );
-
-        ctx.stroke();
-
-    }
-
-
-    ctx.restore();
-
-}
-
-
-/* =========================================================
-   PHYSICS
-========================================================= */
-
-function updatePhysics() {
-
-    /*
-       PARTICLES
-    */
-
-    for (
-        let i =
-            particles.length - 1;
-        i >= 0;
-        i--
-    ) {
-
-        const particle =
+        const p =
             particles[i];
 
 
-        particle.x +=
-            particle.vx;
+        p.x += p.vx;
 
-        particle.y +=
-            particle.vy;
+        p.y += p.vy;
 
+        p.vy += 0.05;
 
-        particle.vx *=
-            0.985;
-
-        particle.vy =
-            particle.vy *
-            0.985 +
-            0.08;
-
-
-        particle.life -=
-            0.025;
+        p.life -= 0.018;
 
 
         if (
-            particle.life <= 0
+            p.life <= 0
         ) {
 
             particles.splice(
@@ -2688,64 +1494,80 @@ function updatePhysics() {
         }
 
 
+        ctx.save();
+
+
         ctx.globalAlpha =
-            particle.life;
-
-
-        ctx.fillStyle =
-            particle.color;
+            p.life;
 
 
         ctx.shadowBlur =
-            14;
+            15;
 
         ctx.shadowColor =
-            particle.color;
+            p.color;
+
+
+        ctx.fillStyle =
+            p.color;
 
 
         ctx.beginPath();
 
+
         ctx.arc(
-            particle.x,
-            particle.y,
-            particle.size,
+
+            p.x,
+
+            p.y,
+
+            p.size,
+
             0,
+
             Math.PI * 2
+
         );
+
 
         ctx.fill();
 
+
+        ctx.restore();
+
     }
 
+}
 
-    /*
-       RIPPLES
-    */
+
+/* =========================================================
+   SHOCKWAVES
+========================================================= */
+
+function updateShockwaves() {
 
     for (
-        let i =
-            ripples.length - 1;
+        let i = ripples.length - 1;
         i >= 0;
         i--
     ) {
 
-        const ripple =
+        const r =
             ripples[i];
 
 
-        ripple.radius +=
-            (
-                ripple.maxRadius -
-                ripple.radius
-            ) * 0.09;
+        r.radius +=
+            (r.maxRadius -
+             r.radius)
+            * 0.08;
 
 
-        ripple.life -=
+        r.life -=
             0.025;
 
 
         if (
-            ripple.life <= 0
+            r.life <= 0
         ) {
 
             ripples.splice(
@@ -2758,46 +1580,414 @@ function updatePhysics() {
         }
 
 
+        ctx.save();
+
+
         ctx.globalAlpha =
-            ripple.life;
+            r.life;
 
 
         ctx.strokeStyle =
-            ripple.color;
-
-
-        ctx.lineWidth =
-            5 *
-            ripple.life;
+            r.color;
 
 
         ctx.shadowBlur =
             25;
 
         ctx.shadowColor =
-            ripple.color;
+            r.color;
+
+
+        ctx.lineWidth =
+            4;
 
 
         ctx.beginPath();
 
+
         ctx.arc(
-            ripple.x,
-            ripple.y,
-            ripple.radius,
+
+            r.x,
+
+            r.y,
+
+            r.radius,
+
             0,
+
             Math.PI * 2
+
         );
 
+
         ctx.stroke();
+
+
+        ctx.restore();
+
+    }
+
+}
+
+
+/* =========================================================
+   DRAW HANDS
+========================================================= */
+
+const fingerTips =
+    [4,8,12,16,20];
+
+
+function drawHands() {
+
+    if (
+        currentHands.length === 0
+    ) {
+
+        return;
 
     }
 
 
-    ctx.globalAlpha =
-        1;
+    currentHands.forEach(
+        (hand,handIndex) => {
 
-    ctx.shadowBlur =
-        0;
+            const color =
+                themes[currentTheme](
+                    time,
+                    handIndex,
+                    2
+                );
+
+
+            /* =====================================
+               SKELETON
+            ===================================== */
+
+            ctx.save();
+
+
+            ctx.shadowBlur =
+                15;
+
+            ctx.shadowColor =
+                color;
+
+
+            drawConnectors(
+
+                ctx,
+
+                hand,
+
+                HAND_CONNECTIONS,
+
+                {
+
+                    color: color,
+
+                    lineWidth: 3
+
+                }
+
+            );
+
+
+            ctx.restore();
+
+
+            /* =====================================
+               LANDMARKS
+            ===================================== */
+
+            fingerTips.forEach(
+                (tip,index) => {
+
+                    const point =
+                        mapPoint(
+                            hand[tip]
+                        );
+
+
+                    const tipColor =
+                        themes[currentTheme](
+                            time,
+                            index,
+                            5
+                        );
+
+
+                    ctx.save();
+
+
+                    ctx.shadowBlur =
+                        25;
+
+                    ctx.shadowColor =
+                        tipColor;
+
+
+                    ctx.fillStyle =
+                        "#ffffff";
+
+
+                    ctx.beginPath();
+
+
+                    ctx.arc(
+
+                        point.x,
+
+                        point.y,
+
+                        5,
+
+                        0,
+
+                        Math.PI * 2
+
+                    );
+
+
+                    ctx.fill();
+
+
+                    ctx.restore();
+
+
+                    /* particles */
+
+                    if (
+                        Math.random() >
+                        0.7
+                    ) {
+
+                        createParticles(
+
+                            point.x,
+
+                            point.y,
+
+                            tipColor,
+
+                            1
+
+                        );
+
+                    }
+
+                }
+
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       TWO-HAND CONNECTION
+    ===================================================== */
+
+    if (
+        currentHands.length >= 2
+    ) {
+
+        const hand1 =
+            currentHands[0];
+
+        const hand2 =
+            currentHands[1];
+
+
+        fingerTips.forEach(
+            (tip,index) => {
+
+                const p1 =
+                    mapPoint(
+                        hand1[tip]
+                    );
+
+                const p2 =
+                    mapPoint(
+                        hand2[tip]
+                    );
+
+
+                const color =
+                    themes[currentTheme](
+                        time,
+                        index,
+                        5
+                    );
+
+
+                ctx.save();
+
+
+                ctx.shadowBlur =
+                    20;
+
+                ctx.shadowColor =
+                    color;
+
+
+                ctx.strokeStyle =
+                    color;
+
+
+                ctx.lineWidth =
+                    3;
+
+
+                ctx.beginPath();
+
+
+                ctx.moveTo(
+                    p1.x,
+                    p1.y
+                );
+
+
+                ctx.lineTo(
+                    p2.x,
+                    p2.y
+                );
+
+
+                ctx.stroke();
+
+
+                ctx.restore();
+
+            }
+        );
+
+
+        /* =================================================
+           MANDALA
+        ================================================= */
+
+        const points = [];
+
+
+        fingerTips.forEach(
+            tip => {
+
+                points.push(
+                    mapPoint(
+                        hand1[tip]
+                    )
+                );
+
+            }
+        );
+
+
+        fingerTips.forEach(
+            tip => {
+
+                points.push(
+                    mapPoint(
+                        hand2[tip]
+                    )
+                );
+
+            }
+        );
+
+
+        let centerX = 0;
+
+        let centerY = 0;
+
+
+        points.forEach(
+            p => {
+
+                centerX +=
+                    p.x;
+
+                centerY +=
+                    p.y;
+
+            }
+        );
+
+
+        centerX /=
+            points.length;
+
+        centerY /=
+            points.length;
+
+
+        ctx.save();
+
+
+        ctx.translate(
+            centerX,
+            centerY
+        );
+
+
+        ctx.rotate(
+            time * 0.5
+        );
+
+
+        ctx.strokeStyle =
+            "rgba(255,255,255,0.25)";
+
+
+        ctx.lineWidth =
+            1;
+
+
+        for (
+            let i = 0;
+            i < points.length;
+            i++
+        ) {
+
+            const a =
+                points[i];
+
+            const b =
+                points[
+                    (i + 3)
+                    % points.length
+                ];
+
+
+            ctx.beginPath();
+
+
+            ctx.moveTo(
+
+                a.x - centerX,
+
+                a.y - centerY
+
+            );
+
+
+            ctx.lineTo(
+
+                b.x - centerX,
+
+                b.y - centerY
+
+            );
+
+
+            ctx.stroke();
+
+        }
+
+
+        ctx.restore();
+
+    }
 
 }
 
@@ -2806,18 +1996,14 @@ function updatePhysics() {
    MAIN RENDER LOOP
 ========================================================= */
 
-function renderLoop(
-    timestamp
-) {
+function renderLoop(timestamp) {
 
     const delta =
-        (
-            timestamp -
-            lastFrame
-        ) / 1000;
+        (timestamp -
+         lastTime) / 1000;
 
 
-    lastFrame =
+    lastTime =
         timestamp;
 
 
@@ -2825,144 +2011,69 @@ function renderLoop(
         delta;
 
 
-    /*
-       FPS
-    */
+    /* FPS */
 
-    fpsFrames++;
+    frames++;
 
 
     if (
         timestamp -
-        fpsTimer >=
+        fpsTime >=
         1000
     ) {
 
-        fpsValue.textContent =
-            fpsFrames;
+        fpsDisplay.innerText =
+            frames;
 
-        fpsFrames =
-            0;
+        frames = 0;
 
-        fpsTimer =
+        fpsTime =
             timestamp;
 
     }
 
 
-    /*
-       Clear effect canvas
-    */
+    /* Background */
 
-    ctx.clearRect(
+    drawBackground();
+
+
+    /* Fade effect canvas */
+
+    ctx.globalCompositeOperation =
+        "destination-out";
+
+
+    ctx.fillStyle =
+        "rgba(0,0,0,0.16)";
+
+
+    ctx.fillRect(
+
         0,
+
         0,
+
         width,
+
         height
+
     );
 
 
-    /*
-       Background
-    */
-
-    drawMatrix();
+    ctx.globalCompositeOperation =
+        "source-over";
 
 
-    /*
-       Trails
-    */
+    /* Effects */
 
-    drawTrails();
+    updateParticles();
 
+    updateShockwaves();
 
-    /*
-       Hand aura
-    */
+    drawHands();
 
-    currentHands.forEach(
-        (
-            hand,
-            index
-        ) => {
-
-            drawHandAura(
-                hand,
-                index
-            );
-
-        }
-    );
-
-
-    /*
-       Skeleton
-    */
-
-    currentHands.forEach(
-        (
-            hand,
-            index
-        ) => {
-
-            drawHand(
-                hand,
-                index
-            );
-
-        }
-    );
-
-
-    /*
-       Portal
-    */
-
-    drawPortal();
-
-
-    /*
-       Mandala
-    */
-
-    drawMandala();
-
-
-    /*
-       Sparks
-    */
-
-    drawSparks();
-
-
-    /*
-       Physics
-    */
-
-    updatePhysics();
-
-
-    /*
-       Status
-    */
-
-    if (
-        currentHands.length === 0
-    ) {
-
-        status.textContent =
-            "Show your hand 🖐️";
-
-    } else {
-
-        status.textContent =
-            `POWER ${
-                Math.round(power)
-            }% • ${
-                gestureValue.textContent
-            }`;
-
-    }
+    detectGestures();
 
 
     requestAnimationFrame(
@@ -2983,15 +2094,24 @@ window.addEventListener(
         if (cameraStream) {
 
             cameraStream
-            .getTracks()
-            .forEach(
-                track =>
-                    track.stop()
-            );
+                .getTracks()
+                .forEach(
+                    track =>
+                        track.stop()
+                );
 
         }
 
     }
+);
+
+
+/* =========================================================
+   INITIAL MESSAGE
+========================================================= */
+
+console.log(
+    "Neon Aura AR loaded successfully."
 );
 
 </script>
